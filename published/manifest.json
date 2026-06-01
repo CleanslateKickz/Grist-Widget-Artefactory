@@ -1,0 +1,98 @@
+[
+  {
+    "widgetId": "artefactory",
+    "name": "Artefactory",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/artefactory/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "No-code IDE in Grist: create/edit widgets (React, HTML, SVG, Mermaid, Markdown) with optional AI assistant",
+    "lastUpdatedAt": "2026-05-09T07:38:36.892Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  },
+  {
+    "widgetId": "qgis2grist",
+    "name": "QGIS → Grist Importer",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/qgis2grist/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "Import QGIS layers (qgis2web .zip/.html, .qgz, QField) directly into Grist with automatic schema creation",
+    "lastUpdatedAt": "2026-05-09T07:38:36.893Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  },
+  {
+    "widgetId": "taskflow-kanban",
+    "name": "TaskFlow Kanban",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/taskflow/kanban/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "Kanban board with drag & drop for task management",
+    "lastUpdatedAt": "2026-05-09T07:38:36.893Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  },
+  {
+    "widgetId": "taskflow-gantt",
+    "name": "TaskFlow Gantt",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/taskflow/gantt/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "Interactive Gantt chart for project planning",
+    "lastUpdatedAt": "2026-05-09T07:38:36.893Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  },
+  {
+    "widgetId": "taskflow-calendar",
+    "name": "TaskFlow Calendar",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/taskflow/calendar/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "Interactive calendar with month/week/day views",
+    "lastUpdatedAt": "2026-05-09T07:38:36.893Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  },
+  {
+    "widgetId": "taskflow-dashboard",
+    "name": "TaskFlow Dashboard",
+    "url": "https://VOTRE_USER.github.io/Widgets-Grist/taskflow/dashboard/",
+    "published": true,
+    "accessLevel": "full",
+    "renderAfterReady": true,
+    "description": "Dashboard with KPIs and task statistics",
+    "lastUpdatedAt": "2026-05-09T07:38:36.893Z",
+    "authors": [
+      {
+        "name": "nic01asfr",
+        "url": "https://github.com/nic01asfr"
+      }
+    ]
+  }
+]

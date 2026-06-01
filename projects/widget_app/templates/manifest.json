@@ -1,0 +1,90 @@
+{
+    "name": "Property Management",
+    "icon": "🏛️",
+    "version": "2.0.0",
+    "description": "Modular property management application",
+    "layout": "sidebar",
+    "theme": {
+      "primary": "#16b378",
+      "accent": "#3b82f6",
+      "success": "#10b981",
+      "warning": "#f59e0b",
+      "danger": "#ef4444"
+    },
+    
+    "routes": [
+      {
+        "path": "/",
+        "label": "Home",
+        "icon": "🏠",
+        "artefact": 27,
+        "description": "Property overview"
+      },
+      {
+        "path": "/batiments",
+        "label": "Buildings",
+        "icon": "🏢",
+        "artefact": 28,
+        "description": "Buildings and premises management",
+        "children": [
+          { "path": "/batiments/liste", "label": "List", "internal": true },
+          { "path": "/batiments/:id", "label": "Record", "internal": true },
+          { "path": "/batiments/:id/locaux", "label": "Premises", "internal": true }
+        ]
+      },
+      {
+        "path": "/interventions",
+        "label": "Interventions",
+        "icon": "🔧",
+        "artefact": 29,
+        "description": "Technical interventions management",
+        "children": [
+          { "path": "/interventions/dashboard", "label": "Dashboard", "internal": true },
+          { "path": "/interventions/kanban", "label": "Kanban", "internal": true },
+          { "path": "/interventions/nouveau", "label": "New", "internal": true },
+          { "path": "/interventions/:id", "label": "Detail", "internal": true }
+        ]
+      },
+      {
+        "path": "/energie",
+        "label": "Energy",
+        "icon": "⚡",
+        "artefact": 30,
+        "description": "Energy monitoring and energy performance certificates",
+        "children": [
+          { "path": "/energie/dashboard", "label": "Dashboard", "internal": true },
+          { "path": "/energie/pdl", "label": "Delivery Points", "internal": true },
+          { "path": "/energie/import", "label": "Import", "internal": true }
+        ]
+      },
+      {
+        "path": "/controles",
+        "label": "Inspections",
+        "icon": "✅",
+        "artefact": 31,
+        "description": "Regulatory inspections",
+        "children": []
+      },
+      {
+        "path": "/admin",
+        "label": "Administration",
+        "icon": "⚙️",
+        "artefact": 32,
+        "description": "Settings and reference data"
+      }
+    ],
+    
+    "tables": {
+      "patrimoine": ["Services", "Agents", "Adresses", "Batiments", "Locaux"],
+      "interventions": ["Interventions", "INT_Categories", "INT_Commentaires"],
+      "energie": ["ENE_Fournisseurs", "ENE_PDL", "ENE_Consommations", "ENE_DPE"],
+      "controles": ["CTR_Types", "CTR_Controles"]
+    },
+    
+    "sharedState": {
+      "currentBatiment": null,
+      "currentLocal": null,
+      "currentIntervention": null,
+      "filters": {}
+    }
+  }

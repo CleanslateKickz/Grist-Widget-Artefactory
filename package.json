@@ -1,0 +1,28 @@
+{
+  "name": "widgets-grist",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Grist widget collection - TaskFlow & Artefactory",
+  "scripts": {
+    "build": "echo 'No build required for static widgets'",
+    "dev": "echo 'Open HTML files directly in the browser'",
+    "manifest": "node scripts/generate-manifest.js",
+    "models": "node scripts/generate-models.js",
+    "promote": "node scripts/promote.js",
+    "serve": "npx serve published -p 3000 --cors"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicO1asFr/Widgets-Grist.git"
+  },
+  "keywords": [
+    "grist",
+    "widgets",
+    "kanban",
+    "gantt",
+    "calendar",
+    "no-code"
+  ],
+  "author": "nicO1asFr",
+  "license": "MIT"
+}

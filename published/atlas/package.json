@@ -1,0 +1,17 @@
+{
+  "name": "atlas",
+  "version": "1.0.17",
+  "description": "Territorial 3D mockup for Grist: MapLibre map + 3D models (three.js), OSM/GeoJSON import, symbolization, terrain (terrarium/LIDAR HD IGN), solar lighting and shadows.",
+  "authors": [
+    {
+      "name": "nic01asfr",
+      "url": "https://github.com/nic01asfr"
+    }
+  ],
+  "grist": {
+    "widgetId": "atlas",
+    "name": "Atlas — Territorial 3D Mockup",
+    "accessLevel": "full",
+    "description": "Territorial 3D mockup: MapLibre map, 3D models, OSM/GeoJSON import, terrain and sunlight. Creates Maquette_Layers table."
+  }
+}
