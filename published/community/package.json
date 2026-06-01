@@ -1,0 +1,217 @@
+{
+  "name": "community-widgets",
+  "version": "1.0.0",
+  "description": "Community and external Grist widgets",
+  "grist": [
+    {
+      "widgetId": "@sgfroerer/widget-builder",
+      "name": "Custom Widget Builder",
+      "url": "https://sgfroerer.github.io/gmaps-grist-widgets/Grist-Widgets/custom-widget-builder/",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Build and prototype custom widgets for Grist.",
+      "authors": [{ "name": "Sam Gfroerer", "url": "https://github.com/sgfroerer" }]
+    },
+    {
+      "widgetId": "@sgfroerer/widget-render-url",
+      "name": "Render URL Widget",
+      "url": "https://sgfroerer.github.io/gmaps-grist-widgets/Grist-Widgets/webframe/",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Render external URLs inside Grist as a widget frame.",
+      "authors": [{ "name": "Sam Gfroerer", "url": "https://github.com/sgfroerer" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-dropdown",
+      "name": "Drop-down Widget",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/drop-down-widget/index.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Interactive drop-down selector widget for Grist data.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-dynamic-tenant-map",
+      "name": "Dynamic Size Tenant Map",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/DynamicSizeTenant.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Map widget that displays tenants with dynamic sizing.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@sgfroerer/widget-image-carousel",
+      "name": "Image Carousel",
+      "url": "https://sgfroerer.github.io/gmaps-grist-widgets/Grist-Widgets/Image-Carousel",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Display images in a carousel or slideshow format.",
+      "authors": [{ "name": "Sam Gfroerer", "url": "https://github.com/sgfroerer" }]
+    },
+    {
+      "widgetId": "@varamil/widget-simplefilter",
+      "name": "Simple table filter",
+      "url": "https://gristlabs.github.io/grist-widget/varamil/simplefilter/index.html",
+      "accessLevel": "read table",
+      "renderAfterReady": true,
+      "description": "Simple table filtering to display any row that matches the search.",
+      "authors": [{ "name": "Varamil", "url": "https://github.com/Varamil" }]
+    },
+    {
+      "widgetId": "@gristlabs/widget-chart",
+      "name": "Advanced charts",
+      "url": "https://gristlabs.github.io/grist-widget/chart/index.html",
+      "accessLevel": "full",
+      "description": "Go beyond Grist charts, with support for additional chart types and layout/styling options. Powered by Plotly Studio.",
+      "authors": [{ "name": "Grist Labs", "url": "https://github.com/gristlabs" }]
+    },
+    {
+      "widgetId": "@gristlabs/widget-renderhtml",
+      "name": "HTML viewer",
+      "url": "https://gristlabs.github.io/grist-widget/renderhtml/index.html",
+      "accessLevel": "read table",
+      "renderAfterReady": true,
+      "description": "View data from a selected record as rendered HTML.",
+      "authors": [{ "name": "Grist Labs", "url": "https://github.com/gristlabs" }]
+    },
+    {
+      "widgetId": "@gristlabs/widget-calendar",
+      "name": "Calendar",
+      "url": "https://gristlabs.github.io/grist-widget/calendar/index.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "archive": {
+        "domains": ["uicdn.toast.com", "maxcdn.bootstrapcdn.com", "cdn.jsdelivr.net"],
+        "entrypoints": ["https://gristlabs.github.io/grist-widget/calendar/i18n/"]
+      },
+      "description": "Show records as events in a calendar view. Choose between daily, monthly, or yearly views.",
+      "authors": [{ "name": "Grist Labs", "url": "https://github.com/gristlabs" }]
+    },
+    {
+      "widgetId": "@gristlabs/widget-actionbutton",
+      "name": "Action button",
+      "url": "https://gristlabs.github.io/grist-widget/actionbutton/index.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Build one or more buttons that send customizable actions (e.g. \"AddRecord\") to the Grist data engine.",
+      "authors": [{ "name": "Grist Labs", "url": "https://github.com/gristlabs" }]
+    },
+    {
+      "widgetId": "@gristlabs/widget-markdown",
+      "name": "Markdown",
+      "url": "https://gristlabs.github.io/grist-widget/markdown",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "View and format a record's text using Markdown syntax.",
+      "authors": [{ "name": "Grist Labs", "url": "https://github.com/gristlabs" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-search",
+      "name": "Search",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Search.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "A simple search widget for finding records in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-privateeye",
+      "name": "PrivateEye Search Widget",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/PrivateEye.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Search widget for PrivateEye data integration in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-tenant-dashboard",
+      "name": "Tenant Dashboard",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Tenant-Dash.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Dashboard for viewing and managing tenant information in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-sale-comps-grist",
+      "name": "Sale-Comps-Grist",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Sale-Comps-Grist.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "View individual sale comps records with multiple tabs in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-sale-comps",
+      "name": "saleComps",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/saleComps.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Display sale comps with search and gallery component view in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-oregon-centers",
+      "name": "Oregon Shopping Centers",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Centers.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Display information about Oregon shopping centers in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-exp-lease",
+      "name": "Exp-Lease",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Exp-Lease.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Manage and view lease expiration data in Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-reonomy-compare",
+      "name": "Compare CoStar & Reonomy Map",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/ReonomyCompareMap.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Compare CoStar and Reonomy data on a map within Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@sgfroerer/widget-crm-map",
+      "name": "CRM Map",
+      "url": "https://toolbox-directory-kickz9814239231.netlify.app/tools/grist-widgets/Map-V3.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Interactive CRM property map with Leaflet, clustering, search, and classification filters.",
+      "authors": [{ "name": "Sam Gfroerer", "url": "https://github.com/sgfroerer" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-print-owner-profile",
+      "name": "Print Owner Profile",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Print%20Owner%20Profile.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Print-formatted owner profile view for Grist records.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-tables-permissions",
+      "name": "Tables & Permissions",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Tables%20and%20Permissions.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "View and manage table schemas and permissions within Grist.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    },
+    {
+      "widgetId": "@cleanslatekickz/widget-unified-skip-tracer",
+      "name": "Unified Skip Tracer",
+      "url": "https://cleanslatekickz.github.io/geojson/Widgets/Unified%20Skip%20Tracer.html",
+      "accessLevel": "full",
+      "renderAfterReady": true,
+      "description": "Unified skip tracing tool for finding owner and contact information.",
+      "authors": [{ "name": "cleanslatekickz", "url": "https://github.com/cleanslatekickz" }]
+    }
+  ]
+}

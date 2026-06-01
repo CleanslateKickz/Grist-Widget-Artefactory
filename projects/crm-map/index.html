@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        #map { width: 100vw; height: 100vh; }
+        .crosshair-cursor { cursor: crosshair !important; }
+
+        #settings { position:absolute;top:10px;right:10px;background:white;padding:1rem;border-radius:0.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);display:none;z-index:1000; }
+        #settings input[type="text"],#settings input[type="checkbox"] { margin:0.5rem 0; }
+        #btnClose { cursor:pointer;color:red; }
+        #lblText { min-width:100px;display:inline-block; }
+
+        .leaflet-control-zoom a { width:36px;height:36px;line-height:36px;font-size:18px; }
+        .marker-cluster { background-color:rgba(255,255,255,0.6);border-radius:50%;text-align:center;color:#000;font-weight:bold; }
+        .marker-cluster-small { width:40px;height:40px;line-height:40px;font-size:14px; }
+        .marker-cluster-medium { width:50px;height:50px;line-height:50px;font-size:16px; }
+        .marker-cluster-large { width:60px;height:60px;line-height:60px;font-size:18px; }
+
+        .custom-popup .leaflet-popup-content-wrapper { padding:0;overflow:hidden;border-radius:8px; }
+        .custom-popup .leaflet-popup-content { margin:0;width:240px !important; }
+        .custom-popup .leaflet-popup-close-button { top:4px;right:4px;color:white;z-index:10;text-shadow:0 1px 2px rgba(0,0,0,0.5); }
+        .popup-card figure { margin:0;position:relative; }
+        .popup-card figure img { width:100%;height:130px;object-fit:cover;display:block; }
+        .popup-card .card-body { padding:10px;background:white; }
+        .popup-card .card-body h2 { font-size:15px;font-weight:600;margin:0;color:#333;cursor:pointer; }
+        .popup-card .card-body h2:hover { color:#2563eb; }
+        .popup-card .details { overflow:hidden;max-height:0;opacity:0;transition:all 0.3s ease-out; }
+        .popup-card .details.open { max-height:300px;opacity:1;margin-top:6px; }
+        .popup-card .details p { margin:3px 0;color:#666;font-size:12px; }
+        .popup-card .details strong { color:#333; }
+        .popup-card .copyable { cursor:pointer;padding:1px 3px;border-radius:2px; }
+        .popup-card .copyable:hover { background:rgba(0,0,0,0.05); }
+        .popup-card .action-buttons { position:absolute;bottom:6px;left:50%;transform:translateX(-50%);opacity:0;transition:opacity 0.2s;display:flex;gap:4px; }
+        .popup-card figure:hover .action-buttons { opacity:1; }
+        .popup-card .action-btn { width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:14px;border-radius:4px;cursor:pointer;color:white;text-decoration:none;background:rgba(0,0,0,0.4);border:none;padding:0; }
+        .popup-card .action-btn:hover { background:rgba(0,0,0,0.6); }
+
+        .custom-search-control { margin:10px !important;position:relative;z-index:1001; }
+        .toggle-search-button { width:36px;height:36px;border:none;background:white;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:box-shadow 0.2s; }
+        .toggle-search-button:hover { box-shadow:0 4px 12px rgba(0,0,0,0.22); }
+        .toggle-search-button.hidden { display:none; }
+        .search-container { display:flex;align-items:center;gap:6px;background:white;padding:6px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.16); }
+        .search-container.hidden { display:none; }
+        .search-container .search-input { width:240px;padding:8px 12px;font-size:14px;border:2px solid #e5e7eb;border-radius:6px;outline:none; }
+        .search-container .search-input:focus { border-color:#3b82f6; }
+        .search-container .search-button,.search-container .close-search-button { width:32px;height:32px;font-size:14px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center; }
+        .search-container .search-button { background:#3b82f6;color:white; }
+        .search-container .close-search-button { background:#f3f4f6;color:#6b7280; }
+
+        .search-marker-icon { position:relative;width:30px;height:30px; }
+        .search-marker-icon .marker-pin { width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid white;position:absolute;top:7px;left:7px;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,0.3); }
+        .search-marker-icon .marker-pulse { width:30px;height:30px;border-radius:50%;background:rgba(59,130,246,0.35);position:absolute;top:0;left:0;animation:pulse-anim 1.5s infinite ease-out; }
+        @keyframes pulse-anim { 0%{transform:scale(0);opacity:0.6;}50%{transform:scale(1);opacity:0.3;}100%{transform:scale(1.5);opacity:0;} }
+
+        .toast-notification { position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;color:white;font-size:14px;font-weight:500;z-index:9999;opacity:0;transform:translateY(20px);transition:all 0.3s ease; }
+        .toast-notification.active { opacity:1;transform:translateY(0); }
+        .toast-notification.info { background:#333; }
+        .toast-notification.success { background:#22c55e; }
+        .toast-notification.warning { background:#f59e0b; }
+        .toast-notification.error { background:#ef4444; }
+
+        .pending-pin { width:28px;height:28px;border-radius:50% 50% 50% 0;background:#3b82f6;border:3px solid white;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.3);animation:bounce-pin 0.6s ease-out; }
+        .pending-pin::after { content:'';width:10px;height:10px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg); }
+        @keyframes bounce-pin { 0%{transform:rotate(-45deg) translateY(-20px);opacity:0;}60%{transform:rotate(-45deg) translateY(4px);opacity:1;}100%{transform:rotate(-45deg) translateY(0);} }
+
+        #click-mode-indicator { position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(59,130,246,0.95);color:white;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:1500;display:none;box-shadow:0 4px 16px rgba(59,130,246,0.4);animation:pulse-border 1.5s infinite;align-items:center;gap:8px; }
+        #click-mode-indicator.active { display:flex; }
+        @keyframes pulse-border { 0%,100%{box-shadow:0 4px 16px rgba(59,130,246,0.4);}50%{box-shadow:0 4px 24px rgba(59,130,246,0.7);} }
+        #click-mode-indicator button { background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;margin-left:8px; }
+
+        .fab-container { position:absolute;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:10px; }
+        .fab { width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,0.25);transition:all 0.2s ease; }
+        .fab-primary { background:#2563eb;color:white; }
+        .fab-primary:hover { background:#1d4ed8;transform:scale(1.05); }
+        .fab-primary.active { background:#dc2626; }
+
+        .basemap-control { position:absolute;top:12px;right:12px;z-index:1001; }
+        .basemap-toggle { width:36px;height:36px;border:none;background:white;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:box-shadow 0.2s; }
+        .basemap-toggle:hover { box-shadow:0 4px 12px rgba(0,0,0,0.22); }
+        .basemap-menu { position:absolute;top:44px;right:0;background:white;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:6px;display:none;min-width:170px;z-index:1002; }
+        .basemap-menu.open { display:block; }
+        .basemap-option { display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:#374151;border:none;background:none;width:100%;text-align:left;transition:background 0.12s; }
+        .basemap-option:hover { background:#f3f4f6; }
+        .basemap-option.active { background:#eff6ff;color:#2563eb; }
+        .basemap-option .bm-check { width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+        .basemap-option.active .bm-check { border-color:#3b82f6;background:#3b82f6; }
+        .basemap-option.active .bm-check::after { content:'';width:8px;height:8px;border-radius:50%;background:white; }
+
+        .filter-container { position:absolute;bottom:24px;left:12px;z-index:1001; }
+        .filter-toggle { width:36px;height:36px;border:none;background:white;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.18);transition:box-shadow 0.2s;position:relative; }
+        .filter-toggle:hover { box-shadow:0 4px 12px rgba(0,0,0,0.22); }
+        .filter-toggle .badge { position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px; }
+        .filter-dropdown { position:absolute;bottom:48px;left:0;background:white;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:12px 14px;display:none;width:280px;z-index:1002; }
+        .filter-dropdown.open { display:block; }
+        .filter-dropdown-title { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between; }
+        .filter-chips-wrap { display:flex;flex-wrap:wrap;gap:6px; }
+        .filter-chip { display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:12px;border:none;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.15s ease;user-select:none;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .filter-chip .chip-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+        .filter-chip.inactive { opacity:0.3; }
+        .filter-chip:hover { box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+        .filter-count { font-size:10px;color:#9ca3af; }
+        .filter-clear { font-size:11px;color:#6b7280;cursor:pointer;padding:3px 8px;border-radius:10px;background:#f3f4f6;border:none; }
+        .filter-clear:hover { background:#e5e7eb; }
+
+        .sidebar-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:2000;display:none; }
+        .sidebar-overlay.active { display:block; }
+        .sidebar { position:fixed;top:0;right:-420px;width:400px;height:100vh;background:white;z-index:2001;box-shadow:-4px 0 24px rgba(0,0,0,0.15);transition:right 0.3s ease;display:flex;flex-direction:column; }
+        .sidebar.open { right:0; }
+        .sidebar-header { padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;flex-shrink:0; }
+        .sidebar-header h3 { margin:0;font-size:1.1rem;font-weight:700;color:#111827; }
+        .sidebar-close { background:none;border:none;font-size:1.3rem;cursor:pointer;color:#9ca3af;padding:4px; }
+        .sidebar-close:hover { color:#374151; }
+        .sidebar-body { padding:16px 20px;overflow-y:auto;flex:1; }
+        .sidebar-footer { padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;flex-shrink:0; }
+        .btn-cancel { padding:8px 16px;border-radius:8px;border:1px solid #d1d5db;background:white;color:#374151;cursor:pointer;font-weight:600;font-size:14px; }
+        .btn-save { padding:8px 20px;border-radius:8px;border:none;background:#2563eb;color:white;cursor:pointer;font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px; }
+        .btn-save:disabled { opacity:0.6;cursor:not-allowed; }
+
+        .form-section { margin-bottom:18px; }
+        .form-section-title { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;margin-bottom:10px; }
+        .form-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+        .form-grid .full-width { grid-column:1 / -1; }
+        .form-grid .address-row { grid-column:1 / -1;display:grid;grid-template-columns:2fr 1fr 50px 70px;gap:10px; }
+        .form-label { display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:3px; }
+        .form-input,.form-select,.form-textarea { width:100%;padding:7px 10px;border:1.5px solid #d1d5db;border-radius:6px;font-size:0.85rem;outline:none;transition:border-color 0.15s,box-shadow 0.15s;background:white;color:#111827; }
+        .form-input:focus,.form-select:focus,.form-textarea:focus { border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.12); }
+        .form-textarea { resize:vertical;min-height:50px; }
+        .form-hint { font-size:0.65rem;color:#94a3b8;margin-top:2px; }
+
+        .form-tabs { display:flex;gap:4px;margin-bottom:14px; }
+        .form-tab { flex:1;padding:7px 14px;border:none;background:#e2e8f0;color:#64748b;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;text-align:center;transition:all 0.15s; }
+        .form-tab.active { background:#3b82f6;color:white; }
+        .form-tab-content { display:none; }
+        .form-tab-content.active { display:block; }
+
+        .owner-toggle { display:flex;gap:8px;margin-bottom:10px; }
+        .owner-toggle button { flex:1;padding:7px;border:1.5px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;font-size:0.8rem;font-weight:600;color:#4b5563;transition:all 0.15s; }
+        .owner-toggle button.active { border-color:#3b82f6;background:#eff6ff;color:#2563eb; }
+        .owner-search-wrap { position:relative; }
+        .owner-results { position:absolute;top:100%;left:0;right:0;margin-top:4px;background:white;border:1px solid #e5e7eb;border-radius:6px;max-height:180px;overflow-y:auto;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.1);display:none; }
+        .owner-results.active { display:block; }
+        .owner-result-item { padding:7px 10px;cursor:pointer;font-size:0.8rem;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center; }
+        .owner-result-item:hover { background:#f0f9ff; }
+        .owner-result-item .color-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:6px;display:inline-block; }
+        .owner-selected { display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;margin-top:6px;font-size:0.85rem; }
+        .owner-selected-name { font-weight:600;color:#1e40af; }
+        .owner-selected-remove { cursor:pointer;color:#ef4444;font-size:0.75rem;font-weight:600; }
+
+        .coords-bar { background:#f3f4f6;border-radius:6px;padding:8px 12px;margin-bottom:14px;display:flex;gap:14px;font-size:0.75rem;color:#4b5563; }
+        .spinner { width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.6s linear infinite;display:inline-block; }
+        @keyframes spin { to{transform:rotate(360deg);} }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="click-mode-indicator">
+        <span>&#x1F4CD;</span>
+        <span id="click-mode-text">Click on the map to place the property</span>
+        <button id="cancel-click-mode">Cancel</button>
+    </div>
+
+    <div class="fab-container">
+        <button class="fab fab-primary" id="btnAddMode" title="Add Property (Click on map)">&#43;</button>
+    </div>
+
+    <div class="basemap-control">
+        <button class="basemap-toggle" id="basemapToggleBtn" title="Change map layer">&#x1F5FA;</button>
+        <div class="basemap-menu" id="basemapMenu">
+            <button class="basemap-option active" data-layer="Google Hybrid"><span class="bm-check"></span>Google Hybrid</button>
+            <button class="basemap-option" data-layer="ArcGIS"><span class="bm-check"></span>ArcGIS Street</button>
+            <button class="basemap-option" data-layer="OpenStreetMap"><span class="bm-check"></span>OpenStreetMap</button>
+        </div>
+    </div>
+
+    <div class="filter-container" id="filterContainer">
+        <button class="filter-toggle" id="filterToggleBtn" title="Filter by classification">&#x1F3AF;</button>
+        <div class="filter-dropdown" id="filterDropdown">
+            <div class="filter-dropdown-title">
+                <span>Classification Filter</span>
+                <button class="filter-clear" id="filterClear" style="display:none">Show All</button>
+            </div>
+            <div class="filter-chips-wrap" id="filterChips"></div>
+        </div>
+    </div>
+
+    <div id="settings" class="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg z-[1000] hidden" style="right:60px;">
+        <div id="btnClose" class="cursor-pointer text-red-500 mb-2">Close</div>
+        <label id="lblToggle" for="cbxMode" class="flex items-center gap-2 mb-4">
+            <input type="checkbox" id="cbxMode" class="toggle toggle-primary">
+            <span id="lblText" class="min-w-[100px]">All locations</span>
+        </label>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>&#128205; Add Property &amp; Owner</h3>
+            <button class="sidebar-close" id="btnCloseSidebar">&times;</button>
+        </div>
+        <div class="sidebar-body">
+            <div class="coords-bar">
+                <span><strong>Lat:</strong> <span id="dispLat">--</span></span>
+                <span><strong>Lng:</strong> <span id="dispLng">--</span></span>
+            </div>
+            <div class="form-tabs">
+                <button class="form-tab active" data-tab="tab-property">&#127968; Property</button>
+                <button class="form-tab" data-tab="tab-owner">&#128100; Owner</button>
+            </div>
+            <div id="tab-property" class="form-tab-content active">
+                <div class="form-section">
+                    <div class="form-section-title">&#128205; Location</div>
+                    <div class="form-grid">
+                        <div class="address-row">
+                            <div><label class="form-label">Address *</label><input type="text" id="inpAddress" class="form-input" placeholder="123 Main St"></div>
+                            <div><label class="form-label">City</label><select id="inpCity" class="form-select"></select></div>
+                            <div><label class="form-label">State</label><input type="text" id="inpState" class="form-input" value="OR"></div>
+                            <div><label class="form-label">Zip</label><input type="text" id="inpZip" class="form-input" placeholder="97201"></div>
+                        </div>
+                        <div><label class="form-label">County</label><select id="inpCounty" class="form-select"></select></div>
+                        <div><label class="form-label">Parcel #</label><input type="text" id="inpParcel" class="form-input" placeholder="Parcel ID"></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">&#127970; Details</div>
+                    <div class="form-grid">
+                        <div><label class="form-label">Property Name</label><input type="text" id="inpPropName" class="form-input" placeholder="Sunset Plaza"></div>
+                        <div><label class="form-label">Property ID</label><input type="text" id="inpPropId" class="form-input" placeholder="Auto or manual"><p class="form-hint">Leave blank for auto &#x274C;</p></div>
+                        <div><label class="form-label">Tenancy</label><select id="inpTenancy" class="form-select"><option value="">Select...</option><option>Single</option><option>Multi</option></select></div>
+                        <div class="full-width"><label class="form-label">Image URL</label><input type="text" id="inpImageURL" class="form-input" placeholder="https://..."></div>
+                        <div class="full-width"><label class="form-label">Notes</label><textarea id="inpPropNotes" class="form-textarea" placeholder="Property notes..."></textarea></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">&#128100; Link Owner</div>
+                    <div class="owner-toggle">
+                        <button type="button" id="btnExistingOwner" class="active">Existing Owner</button>
+                        <button type="button" id="btnNewOwner">New Owner</button>
+                    </div>
+                    <div id="panelExistingOwner">
+                        <div class="owner-search-wrap">
+                            <input type="text" id="inpOwnerSearch" class="form-input" placeholder="Search owners by name..." autocomplete="off">
+                            <div id="ownerResults" class="owner-results"></div>
+                        </div>
+                        <div id="ownerSelected"></div>
+                    </div>
+                    <div id="panelNewOwner" style="display:none;">
+                        <p class="form-hint" style="margin-bottom:8px;">Fill owner details on the Owner tab &#8594;</p>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-owner" class="form-tab-content">
+                <div class="form-section">
+                    <div class="form-section-title">&#128100; Owner Information</div>
+                    <div class="form-grid">
+                        <div><label class="form-label">Owner Name *</label><input type="text" id="inpOwnerName" class="form-input" placeholder="John Smith"></div>
+                        <div><label class="form-label">Full Name</label><input type="text" id="inpOwnerFullName" class="form-input" placeholder="John A. Smith"></div>
+                        <div><label class="form-label">Phone</label><input type="text" id="inpOwnerPhone" class="form-input" placeholder="503-555-0100"></div>
+                        <div class="full-width"><label class="form-label">Owner Address</label><input type="text" id="inpOwnerAddr" class="form-input" placeholder="Owner address"></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <div class="form-section-title">&#127991; Classification</div>
+                    <div class="form-grid">
+                        <div class="full-width"><label class="form-label">Classify Color</label><select id="inpClassifyColor" class="form-select"></select></div>
+                        <div class="full-width"><label class="form-label">Notes</label><textarea id="inpOwnerNotes" class="form-textarea" placeholder="Notes about this owner..."></textarea></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <button id="btnCancelAdd" class="btn-cancel">Cancel</button>
+            <button id="btnSaveAll" class="btn-save"><span id="saveSpinner" class="spinner" style="display:none;"></span><span id="saveText">&#128190; Save</span></button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script>
+"use strict";
+
+var amap=null,markersLayer=null,popups={},searchResultsLayer=null;
+var selectedTableId=null,selectedRowId=null,mode='multi';
+var lastRecord=null,lastRecords=null;
+var ownersMap={},ownersList=[],updateTimer=null;
+var addModeActive=false,pendingMarker=null,selectedOwnerId=null;
+var pendingLat=null,pendingLng=null;
+var activeFilters=null;
+var currentBaseLayer="Google Hybrid";
+
+var CLASSIFICATIONS=[
+    {name:"Not Interested/DNC",color:"#ef4444"},
+    {name:"IPA",color:"#8b5cf6"},
+    {name:"Eric",color:"#f97316"},
+    {name:"Broker/Eh",color:"#6b7280"},
+    {name:"Never",color:"#3b82f6"},
+    {name:"Call Relationship",color:"#eab308"},
+    {name:"Contact",color:"#22c55e"},
+    {name:"Call Again",color:"#22c55e"}
+];
+var classifyColorHex={"Not Interested/DNC":"#ef4444","IPA":"#8b5cf6","Eric":"#f97316","Broker/Eh":"#6b7280","Never":"#3b82f6","Call Relationship":"#eab308","Contact":"#22c55e","Call Again":"#22c55e"};
+
+var COL={Name:"Name",Longitude:"Longitude",Latitude:"Latitude",Property_Id:"Property_Id",Property_Address:"Property_Address",ImageURL:"ImageURLs",CoStar_URL:"CoStar_URL",County_Hyper:"County_Hyper",GIS:"GIS",PrimaryOwner:"PrimaryOwner",City:"City",State:"State",Zip:"Zip",County:"County",Property_Name:"Property_Name",Popup_IMG:"Pop_up_IMG"};
+
+var SHADOW='https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png';
+var ICON_OPTS={iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41],shadowUrl:SHADOW};
+var ICON_BASE='https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-';
+var iconCache={};
+function getIcon(n){if(!iconCache[n])iconCache[n]=new L.Icon(Object.assign({},ICON_OPTS,{iconUrl:ICON_BASE+n+'.png'}));return iconCache[n];}
+var classifyIconMap={"Not Interested/DNC":getIcon('red'),"IPA":getIcon('violet'),"Eric":getIcon('orange'),"Broker/Eh":getIcon('grey'),"Never":getIcon('blue'),"Call Relationship":getIcon('yellow'),"Contact":getIcon('green'),"Call Again":getIcon('green')};
+var defaultIcon=getIcon('blue'),goldIcon=getIcon('gold');
+function getClassifyIcon(c){return classifyIconMap[c]||defaultIcon;}
+
+var CITY_CHOICES=["Bend","Lake Oswego","Oregon City","Canby","Milwaukie","Clackamas","West Linn","Wilsonville","Estacada","Portland","Happy Valley","Damascus","Lebanon","Eugene","Albany","Salem","La Grande","Woodburn","Keizer","Hines","Gresham","Troutdale","Fairview","The Dalles","Beaverton","Tigard","Aloha","Hillsboro","Sherwood","Tualatin","Baker City","McMinnville","Forest Grove","Springfield","Klamath Falls","Cottage Grove","Molalla","Cornelius","Newberg","Sandy","Gervais","Dallas","Oakridge","Ontario","North Bend","Corvallis","Roseburg","Hood River","Medford","Prineville","Grants Pass","Lincoln City","Sweet Home","Harrisburg","Stayton","Independence","Hermiston","Seaside","Lakeside","Redmond","Pendleton","Island City","Scappoose","Sutherlin","Sisters","Eagle Point","Terrebonne","Ashland","Coos Bay","Silverton","Burns","Gladstone","King City","Boring","Wood Village","Hubbard","Creswell","Tillamook","Mulino","Myrtle Creek","Philomath","Waldport","Winston","White City","Dundee","Talent","Pleasant Hill","Rogue River","Central Point","Cave Junction","Halsey","Newport","Madras","Banks","Rainier","Florence","Jacksonville","Veneta","Junction City","Monmouth","Reedsport","Saint Helens","Phoenix","Bandon","Oakland","Alliance","La Pine","Brookings","Cannon Beach","Jefferson","Riddle","North Plains","Aumsville","Warrenton","Gold Beach","Milton Freewater","Toledo","Aurora","Shady Cove","Glide","Gold Hill","Drain","Mill City","Dayton","Astoria","Glendale","Brownsville","Monroe","Culver","Turner","Coburg","Umatilla","Lafayette","Pilot Rock","Tangent","Nyssa","Pacific City","Saint Paul","Detroit","Carlton","Sheridan","Welches","Depoe Bay","Oak Grove","Rufus","Garibaldi","Lowell","John Day","Irrigon","Clatskanie","Christmas Valley","Gearhart","Canyonville","Coquille","Lakeview","Lexington","Merrill","Myrtle Point","Port Orford","Sunriver","Vernonia","Wallowa","Vale","Stanfield","Mosier","Imnaha","Boardman","Donald","Gleneden Beach","Heppner","Selma","Agness","Chiloquin"];
+var COUNTY_CHOICES=["Baker","Benton","Clackamas","Clatsop","Columbia","Coos","Crook","Curry","Deschutes","Douglas","Gilliam","Grant","Harney","Hood River","Jackson","Jefferson","Josephine","Klamath","Lake","Lane","Lincoln","Linn","Malheur","Marion","Morrow","Multnomah","Polk","Sherman","Tillamook","Umatilla","Union","Wallowa","Wasco","Washington","Wheeler","Yamhill"];
+var CLASSIFY_COLOR_CHOICES=["Not Interested/DNC","IPA","Eric","Broker/Eh","Never","Call Relationship","Contact","Call Again"];
+
+var STATE_ABBREV={Oregon:"OR",Washington:"WA",California:"CA",Idaho:"ID",Nevada:"NV",Arizona:"AZ","New Mexico":"NM",Utah:"UT",Montana:"MT",Wyoming:"WY",Colorado:"CO","North Dakota":"ND","South Dakota":"SD",Nebraska:"NE",Kansas:"KS",Oklahoma:"OK",Texas:"TX",Minnesota:"MN",Iowa:"IA",Missouri:"MO",Arkansas:"AR",Louisiana:"LA",Wisconsin:"WI",Illinois:"IL",Michigan:"MI",Indiana:"IN",Ohio:"OH",Kentucky:"KY",Tennessee:"TN",Mississippi:"MS",Alabama:"AL",Georgia:"GA",Florida:"FL","South Carolina":"SC","North Carolina":"NC",Virginia:"VA","West Virginia":"WV",Pennsylvania:"PA","New York":"NY",Vermont:"VT","New Hampshire":"NH",Maine:"ME",Massachusetts:"MA","Rhode Island":"RI",Connecticut:"CT","New Jersey":"NJ",Delaware:"DE",Maryland:"MD","District of Columbia":"DC",Alaska:"AK",Hawaii:"HI"};
+
+function populateSelect(id,choices,emptyLabel){var el=document.getElementById(id);if(!el)return;var html=emptyLabel?'<option value="">'+emptyLabel+'</option>':'';for(var i=0;i<choices.length;i++)html+='<option value="'+choices[i]+'">'+choices[i]+'</option>';el.innerHTML=html;}
+
+function parseValue(v){if(!v)return '';if(Array.isArray(v))return v.map(function(x){return(x&&typeof x==='object'&&x.Name)?x.Name:x;}).join(", ");if(typeof v==='object')return v.Name||v.toString();return String(v);}
+function extractOwnerNames(nv){if(!nv)return[];if(typeof nv==='string')return[nv];if(typeof nv==='number')return[String(nv)];if(Array.isArray(nv)){var o=[];for(var i=0;i<nv.length;i++){var it=nv[i];if(typeof it==='string')o.push(it);else if(typeof it==='number')o.push(String(it));else if(it&&typeof it==='object')o.push(it.Name||it.name||'');}return o;}if(typeof nv==='object'&&nv!==null)return[nv.Name||nv.name||''];return[];}
+function escapeHtml(t){return t?t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):'';}
+
+function showToast(msg,type){var old=document.querySelectorAll('.toast-notification');for(var i=0;i<old.length;i++)old[i].remove();var t=document.createElement('div');t.className='toast-notification '+(type||'info');t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.classList.add('active');},10);setTimeout(function(){t.classList.remove('active');setTimeout(function(){if(t.parentNode)t.remove();},300);},3000);}
+
+function getOwnerColor(rec){var po=parseValue(rec[COL.PrimaryOwner]);if(po&&ownersMap[po])return ownersMap[po];var names=extractOwnerNames(rec[COL.Name]);for(var i=0;i<names.length;i++)if(ownersMap[names[i]])return ownersMap[names[i]];return null;}
+function resolveMarkerIcon(rec){var c=getOwnerColor(rec);return c?getClassifyIcon(c):defaultIcon;}
+
+function createPopupContent(rec){
+    var address=parseValue(rec[COL.Property_Address])||'';
+    var propId=parseValue(rec[COL.Property_Id])||'';
+    var name=parseValue(rec[COL.Name])||'';
+    var imgUrl=parseValue(rec[COL.ImageURL])||'';
+    var lat=rec[COL.Latitude],lng=rec[COL.Longitude];
+    var city=parseValue(rec[COL.City])||'';
+    var oc=getOwnerColor(rec);
+    var hex=classifyColorHex[oc]||'#6b7280';
+    var dn=name||address||'Unnamed Property';
+    var imgH=imgUrl?'<img src="'+imgUrl+'" alt="" onerror="this.style.display=\'none\'" />':'<div style="width:100%;height:130px;background:linear-gradient(135deg,'+hex+'33,'+hex+'55);display:flex;align-items:center;justify-content:center;color:'+hex+';font-size:36px;">&#x1F3E0;</div>';
+    var sa=address.replace(/'/g,"\\'");
+    return '<div class="popup-card"><figure style="background:'+hex+'22;">'+imgH+'<div class="action-buttons">'
+        +(address?'<button class="action-btn" onclick="window._copyText(\''+sa+'\')">&#x1F4CB;</button>':'')
+        +'<a href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat+','+lng+'" class="action-btn" target="_blank">&#x1F4F7;</a>'
+        +(rec[COL.CoStar_URL]?'<a href="'+rec[COL.CoStar_URL]+'" class="action-btn" target="_blank">&#x1F3E2;</a>':'')
+        +'</div></figure><div class="card-body">'
+        +'<h2 onclick="window._toggleDetails(this)">'+dn+'</h2>'
+        +'<div class="details">'
+        +(address?'<p><strong>Address:</strong> <span class="copyable" onclick="window._copyText(\''+sa+'\')">'+address+'</span></p>':'')
+        +(city?'<p><strong>City:</strong> '+city+'</p>':'')
+        +(propId?'<p><strong>ID:</strong> '+propId+'</p>':'')
+        +(oc?'<p><strong>Status:</strong> <span style="color:'+hex+';font-weight:600;">'+oc+'</span></p>':'')
+        +'</div></div></div>';
+}
+window._copyText=function(text){if(navigator.clipboard)navigator.clipboard.writeText(text).catch(function(){});showToast('Copied!','success');};
+window._toggleDetails=function(el){el.classList.toggle('expanded');var d=el.nextElementSibling;if(d)d.classList.toggle('open');};
+
+function isRecordVisible(rec){if(!activeFilters)return true;var cls=getOwnerColor(rec);if(!cls)return false;return!!activeFilters[cls];}
+
+function buildMarkers(data){
+    if(!amap)initializeMap();
+    if(markersLayer){amap.removeLayer(markersLayer);markersLayer=null;}
+    popups={};
+    markersLayer=L.markerClusterGroup({maxClusterRadius:function(z){return z>=16?10:80;},spiderfyOnMaxZoom:true,showCoverageOnHover:false,zoomToBoundsOnClick:true,disableClusteringAtZoom:19,chunkedLoading:true,removeOutsideVisibleBounds:true});
+    var batch=[];
+    if(data&&data.length){for(var i=0;i<data.length;i++){var rec=data[i];var lat=rec[COL.Latitude],lng=rec[COL.Longitude];if(lat==null||lng==null||isNaN(lat)||isNaN(lng))continue;if(!isRecordVisible(rec))continue;var icon=(rec.id===selectedRowId)?goldIcon:resolveMarkerIcon(rec);var marker=L.marker([lat,lng],{title:parseValue(rec[COL.Name])||parseValue(rec[COL.Property_Address]),icon:icon});marker.record=rec;marker.on('click',function(){var r=this.record;if(!this.getPopup())this.bindPopup(createPopupContent(r),{maxWidth:260,minWidth:240,className:'custom-popup'});grist.setCursorPos({rowId:r.id}).catch(function(){});});popups[rec.id]=marker;batch.push(marker);}}
+    markersLayer.addLayers(batch);amap.addLayer(markersLayer);
+}
+function scheduleUpdate(){if(updateTimer)clearTimeout(updateTimer);updateTimer=setTimeout(function(){if(lastRecords&&mode!=='single')buildMarkers(lastRecords);},150);}
+
+async function updateOwnersTable(){
+    try{var table=await grist.docApi.fetchTable('Owners_');if(!table||!table.id)return;
+    var classifyCol=null;var cands=['Classify__Color','Classify_Color','Classify Color','ClassifyColor'];for(var c=0;c<cands.length;c++){if(table[cands[c]]&&Array.isArray(table[cands[c]])){classifyCol=table[cands[c]];break;}}
+    var nameCol=table.Name||table.name;if(!nameCol)return;
+    ownersMap={};ownersList=[];
+    for(var i=0;i<table.id.length;i++){var n=nameCol[i];if(n){var cc=classifyCol?classifyCol[i]:null;if(cc)ownersMap[n]=cc;ownersList.push({id:table.id[i],name:n,classifyColor:cc||''});}}
+    ownersList.sort(function(a,b){return a.name.localeCompare(b.name);});
+    console.log("Loaded "+ownersList.length+" owners, "+Object.keys(ownersMap).length+" with classification");
+    renderFilterChips();
+    if(lastRecords)scheduleUpdate();
+    }catch(e){console.warn("Could not fetch Owners_ table:",e);}
+}
+
+var baseLayers={"Google Hybrid":L.tileLayer('http://mt0.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}',{attribution:'Google'}),"ArcGIS":L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{}),"OpenStreetMap":L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{})};
+
+function closeBasemapMenu(){var m=document.getElementById('basemapMenu');if(m)m.classList.remove('open');}
+
+function initBasemapControl(){
+    var menu=document.getElementById('basemapMenu');var btn=document.getElementById('basemapToggleBtn');if(!menu||!btn)return;
+    btn.addEventListener('click',function(e){e.stopPropagation();menu.classList.toggle('open');var dd=document.getElementById('filterDropdown');if(dd)dd.classList.remove('open');});
+    var opts=menu.querySelectorAll('.basemap-option');
+    for(var i=0;i<opts.length;i++){(function(opt){opt.addEventListener('click',function(){var name=opt.getAttribute('data-layer');if(name===currentBaseLayer)return;amap.removeLayer(baseLayers[currentBaseLayer]);amap.addLayer(baseLayers[name]);currentBaseLayer=name;for(var j=0;j<opts.length;j++)opts[j].classList.toggle('active',opts[j].getAttribute('data-layer')===name);});})(opts[i]);}
+    document.addEventListener('click',function(e){if(!e.target.closest('.basemap-control'))menu.classList.remove('open');});
+}
+
+function initFilterBar(){
+    var wrap=document.getElementById('filterChips');var clearBtn=document.getElementById('filterClear');var toggleBtn=document.getElementById('filterToggleBtn');var dropdown=document.getElementById('filterDropdown');
+    if(!wrap||!toggleBtn||!dropdown)return;
+    for(var i=0;i<CLASSIFICATIONS.length;i++){var cls=CLASSIFICATIONS[i];var chip=document.createElement('button');chip.className='filter-chip';chip.setAttribute('data-classification',cls.name);chip.innerHTML='<span class="chip-dot" style="background:'+cls.color+'"></span>'+cls.name;(function(name){chip.addEventListener('click',function(){toggleFilter(name);});})(cls.name);wrap.appendChild(chip);}
+    if(clearBtn){clearBtn.addEventListener('click',function(){activeFilters=null;renderFilterChips();if(lastRecords&&mode!=='single')buildMarkers(lastRecords);});}
+    toggleBtn.addEventListener('click',function(e){e.stopPropagation();dropdown.classList.toggle('open');closeBasemapMenu();});
+    document.addEventListener('click',function(e){if(!dropdown.contains(e.target)&&e.target!==toggleBtn)dropdown.classList.remove('open');});
+}
+function toggleFilter(classification){if(!activeFilters){activeFilters={};for(var i=0;i<CLASSIFICATIONS.length;i++)activeFilters[CLASSIFICATIONS[i].name]=true;}activeFilters[classification]=!activeFilters[classification];var anyOff=false;for(var k in activeFilters){if(!activeFilters[k]){anyOff=true;break;}}if(!anyOff)activeFilters=null;renderFilterChips();if(lastRecords&&mode!=='single')buildMarkers(lastRecords);}
+function renderFilterChips(){var chips=document.querySelectorAll('.filter-chip');var clearBtn=document.getElementById('filterClear');var showingAll=!activeFilters;var hiddenCount=0;for(var i=0;i<chips.length;i++){var name=chips[i].getAttribute('data-classification');if(showingAll){chips[i].classList.remove('inactive');}else{var inactive=!activeFilters[name];chips[i].classList.toggle('inactive',inactive);if(inactive)hiddenCount++;}}if(clearBtn)clearBtn.style.display=showingAll?'none':'';var toggleBtn=document.getElementById('filterToggleBtn');if(toggleBtn){var oldBadge=toggleBtn.querySelector('.badge');if(oldBadge)oldBadge.remove();if(hiddenCount>0){var badge=document.createElement('span');badge.className='badge';badge.textContent=hiddenCount;toggleBtn.appendChild(badge);}}updateFilterCounts();}
+function updateFilterCounts(){if(!lastRecords)return;var counts={};for(var i=0;i<CLASSIFICATIONS.length;i++)counts[CLASSIFICATIONS[i].name]=0;for(var j=0;j<lastRecords.length;j++){var cls=getOwnerColor(lastRecords[j]);if(cls&&counts[cls]!==undefined)counts[cls]++;}var chips=document.querySelectorAll('.filter-chip');for(var c=0;c<chips.length;c++){var name=chips[c].getAttribute('data-classification');var span=chips[c].querySelector('.filter-count');if(counts[name]>0){if(!span){span=document.createElement('span');span.className='filter-count';chips[c].appendChild(span);}span.textContent='('+counts[name]+')';}else if(span){span.remove();}}}
+
+var searchIcon=L.divIcon({className:'search-marker-icon',html:'<div class="marker-pulse"></div><div class="marker-pin"></div>',iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-20]});
+
+function initializeMap(){
+    if(amap)return;
+    amap=L.map('map',{layers:[baseLayers["Google Hybrid"]],center:[45.5,-122.6],zoom:10,wheelPxPerZoomLevel:90});
+    searchResultsLayer=L.layerGroup().addTo(amap);
+    var sc=L.control({position:'topleft'});sc.onAdd=function(){var c=L.DomUtil.create('div','custom-search-control');var tb=L.DomUtil.create('button','toggle-search-button',c);tb.innerHTML='\u{1F50D}';tb.title='Search';var sb=L.DomUtil.create('div','search-container hidden',c);var si=L.DomUtil.create('input','search-input',sb);si.type='text';si.placeholder='Search address...';var sBtn=L.DomUtil.create('button','search-button',sb);sBtn.innerHTML='\u{1F50D}';var cBtn=L.DomUtil.create('button','close-search-button',sb);cBtn.innerHTML='\u2716';L.DomEvent.on(tb,'click',function(e){L.DomEvent.stop(e);sb.classList.remove('hidden');tb.classList.add('hidden');si.focus();});L.DomEvent.on(cBtn,'click',function(e){L.DomEvent.stop(e);sb.classList.add('hidden');tb.classList.remove('hidden');si.value='';searchResultsLayer.clearLayers();});L.DomEvent.on(sBtn,'click',function(e){L.DomEvent.stop(e);doSearch(si.value);});L.DomEvent.on(si,'keypress',function(e){if(e.key==='Enter'){L.DomEvent.stop(e);doSearch(si.value);}});L.DomEvent.disableClickPropagation(c);return c;};sc.addTo(amap);
+    amap.on('click',function(e){if(!addModeActive)return;pendingLat=e.latlng.lat;pendingLng=e.latlng.lng;if(pendingMarker)amap.removeLayer(pendingMarker);pendingMarker=L.marker(e.latlng,{icon:L.divIcon({className:'',html:'<div class="pending-pin"></div>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(amap);reverseGeocode(pendingLat,pendingLng);exitAddMode();openSidebar();});
+}
+
+function doSearch(query){if(!query||!query.trim())return;var q=query.trim();searchResultsLayer.clearLayers();var pm=findPropertyMatch(q);if(pm){var m=L.marker([pm.lat,pm.lng],{icon:searchIcon}).addTo(searchResultsLayer);m.bindPopup('<b>'+pm.label+'</b>').openPopup();amap.flyTo([pm.lat,pm.lng],16,{duration:1.2});return;}geocodeNominatim(q);}
+function findPropertyMatch(query){if(!lastRecords||!lastRecords.length)return null;var q=query.toLowerCase(),best=null,bestScore=0;for(var i=0;i<lastRecords.length;i++){var rec=lastRecords[i];var lat=rec[COL.Latitude],lng=rec[COL.Longitude];if(lat==null||lng==null||isNaN(lat)||isNaN(lng))continue;var fields=[rec[COL.Property_Address],rec[COL.Name],rec[COL.PrimaryOwner],rec[COL.Property_Id]];for(var f=0;f<fields.length;f++){var str=parseValue(fields[f]);if(!str)continue;var lo=str.toLowerCase(),score=0;if(lo===q)score=30;else if(lo.indexOf(q)===0)score=20;else if(lo.indexOf(q)!==-1)score=10;if(score>bestScore){bestScore=score;best={lat:lat,lng:lng,label:(parseValue(rec[COL.Name])||'')+' - '+(parseValue(rec[COL.Property_Address])||str)};}}}return best;}
+function geocodeNominatim(query){var cb='_nom_'+Date.now();var s=document.createElement('script');s.src='https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(query)+'&limit=5&addressdetails=1&json_callback='+cb;window[cb]=function(data){cleanup();if(data&&data.length>0){searchResultsLayer.clearLayers();var lat=parseFloat(data[0].lat),lon=parseFloat(data[0].lon);var m=L.marker([lat,lon],{icon:searchIcon}).addTo(searchResultsLayer);var a=data[0].address||{};var parts=[];if(a.house_number&&a.road)parts.push(a.house_number+' '+a.road);else if(a.road)parts.push(a.road);if(a.city||a.town||a.village)parts.push(a.city||a.town||a.village);if(a.state)parts.push(a.state);m.bindPopup('<b>'+(parts.join(', ')||data[0].display_name)+'</b>').openPopup();amap.flyTo([lat,lon],16,{duration:1.2});}else{showToast('Address not found.','warning');}};s.onerror=function(){cleanup();showToast('Search failed.','error');};function cleanup(){if(s.parentNode)document.head.removeChild(s);try{delete window[cb];}catch(e){}}document.head.appendChild(s);}
+
+function toggleAddMode(){addModeActive=!addModeActive;var btn=document.getElementById('btnAddMode');var ind=document.getElementById('click-mode-indicator');if(addModeActive){btn.classList.add('active');btn.innerHTML='\u2715';btn.title='Cancel Add Mode';ind.classList.add('active');document.getElementById('map').classList.add('crosshair-cursor');showToast('Click on the map to place a property','info');}else{exitAddMode();}}
+function exitAddMode(){addModeActive=false;var btn=document.getElementById('btnAddMode');btn.classList.remove('active');btn.innerHTML='+';btn.title='Add Property';document.getElementById('click-mode-indicator').classList.remove('active');document.getElementById('map').classList.remove('crosshair-cursor');}
+
+function reverseGeocode(lat,lng){var cb='_rg_'+Date.now();var s=document.createElement('script');s.src='https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&addressdetails=1&json_callback='+cb;window[cb]=function(data){cleanup();if(data&&data.address){var a=data.address;var hn=a.house_number||'',rd=a.road||'';var city=a.city||a.town||a.village||'';var stateFull=a.state||'';var state=STATE_ABBREV[stateFull]||stateFull;var zip=a.postcode||'';var county=(a.county||'').replace(' County','').replace(' county','');if(hn&&rd)document.getElementById('inpAddress').value=hn+' '+rd;else if(rd)document.getElementById('inpAddress').value=rd;if(state)document.getElementById('inpState').value=state;if(zip)document.getElementById('inpZip').value=zip;matchSelect('inpCity',city);matchSelect('inpCounty',county);}};s.onerror=function(){cleanup();};function cleanup(){if(s.parentNode)document.head.removeChild(s);try{delete window[cb];}catch(e){}}document.head.appendChild(s);}
+function matchSelect(id,val){if(!val)return;var el=document.getElementById(id);for(var i=0;i<el.options.length;i++){if(el.options[i].value.toLowerCase()===val.toLowerCase()){el.selectedIndex=i;return;}}}
+
+function openSidebar(){document.getElementById('dispLat').textContent=pendingLat?pendingLat.toFixed(6):'--';document.getElementById('dispLng').textContent=pendingLng?pendingLng.toFixed(6):'--';document.getElementById('sidebar').classList.add('open');document.getElementById('sidebarOverlay').classList.add('active');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active');if(pendingMarker){amap.removeLayer(pendingMarker);pendingMarker=null;}exitAddMode();}
+function clearForm(){var inputs=document.querySelectorAll('#sidebar input, #sidebar textarea');for(var i=0;i<inputs.length;i++)if(inputs[i].type!=='checkbox')inputs[i].value='';var selects=document.querySelectorAll('#sidebar select');for(var j=0;j<selects.length;j++){selects[j].selectedIndex=0;for(var k=0;k<selects[j].options.length;k++)selects[j].options[k].selected=false;}document.getElementById('inpState').value='OR';clearSelectedOwner();pendingLat=null;pendingLng=null;}
+
+function filterOwners(query){var results=document.getElementById('ownerResults');if(!query||query.length<1){results.classList.remove('active');return;}var q=query.toLowerCase();var matches=[];for(var i=0;i<ownersList.length&&matches.length<15;i++){if(ownersList[i].name.toLowerCase().indexOf(q)!==-1)matches.push(ownersList[i]);}if(!matches.length){results.innerHTML='<div style="padding:10px;color:#9ca3af;font-size:0.8rem;text-align:center;">No owners found</div>';}else{var html='';for(var j=0;j<matches.length;j++){var o=matches[j];var hex=classifyColorHex[o.classifyColor]||'#6b7280';html+='<div class="owner-result-item" data-id="'+o.id+'" data-name="'+escapeHtml(o.name)+'"><span><span class="color-dot" style="background:'+hex+'"></span>'+escapeHtml(o.name)+'</span>'+(o.classifyColor?'<span style="font-size:0.65rem;color:'+hex+';font-weight:600;">'+escapeHtml(o.classifyColor)+'</span>':'')+'</div>';}results.innerHTML=html;}results.classList.add('active');}
+function selectOwner(id,name){selectedOwnerId=id;document.getElementById('ownerSelected').innerHTML='<div class="owner-selected"><span class="owner-selected-name">\u{1F464} '+escapeHtml(name)+'</span><span class="owner-selected-remove" id="removeOwnerBtn">Remove</span></div>';document.getElementById('removeOwnerBtn').addEventListener('click',clearSelectedOwner);document.getElementById('ownerResults').classList.remove('active');document.getElementById('inpOwnerSearch').value='';}
+function clearSelectedOwner(){selectedOwnerId=null;document.getElementById('ownerSelected').innerHTML='';}
+
+async function getNextPropertyId(){
+    try{
+        var table=await grist.docApi.fetchTable('Properties_');
+        if(!table||!table[COL.Property_Id])return'1 - \u274C';
+        var maxNum=0;
+        for(var i=0;i<table[COL.Property_Id].length;i++){
+            var val=(table[COL.Property_Id][i]||'').trim();
+            var m=val.match(/^(\d+)\s*-\s*\u274C/);
+            if(m){var n=parseInt(m[1],10);if(n>maxNum)maxNum=n;}
+        }
+        return(maxNum+1)+' - \u274C';
+    }catch(e){return'1 - \u274C';}
+}
+
+async function saveAll(){
+    var saveBtn=document.getElementById('btnSaveAll');var spinner=document.getElementById('saveSpinner');var saveText=document.getElementById('saveText');
+    spinner.style.display='inline-block';saveText.textContent='Saving...';saveBtn.disabled=true;
+    try{
+        var isNewOwner=document.getElementById('btnNewOwner').classList.contains('active');
+        var ownerId=selectedOwnerId;var ownerName='';
+
+        if(isNewOwner){
+            ownerName=document.getElementById('inpOwnerName').value.trim();
+            if(!ownerName){showToast('Owner Name is required','error');return;}
+            var ownerFields={Name:ownerName};
+            var fn=document.getElementById('inpOwnerFullName').value.trim();if(fn)ownerFields.Owner_Full_Name=fn;
+            var ph=document.getElementById('inpOwnerPhone').value.trim();if(ph)ownerFields.Phone=ph;
+            var oa=document.getElementById('inpOwnerAddr').value.trim();if(oa)ownerFields.Owner_Address=oa;
+            var cc=document.getElementById('inpClassifyColor').value;if(cc)ownerFields.Classify_Color=cc;
+            var on=document.getElementById('inpOwnerNotes').value.trim();if(on)ownerFields.Extra_Notes=on;
+            var ownerResult=await grist.docApi.applyUserActions([["AddRecord","Owners_",null,ownerFields]]);
+            ownerId=ownerResult&&ownerResult.retValues&&ownerResult.retValues[0];
+            if(!ownerId)throw new Error('Failed to create owner');
+            showToast('Owner created: '+ownerName,'success');
+        }
+
+        var address=document.getElementById('inpAddress').value.trim();
+        var city=document.getElementById('inpCity').value;
+        if(!address){showToast('Property Address is required','error');return;}
+
+        var propFields={Property_Address:address,City:city||'',State:document.getElementById('inpState').value.trim()||'OR'};
+        if(pendingLat!=null&&pendingLng!=null){propFields.Latitude=pendingLat;propFields.Longitude=pendingLng;}
+        var zip=document.getElementById('inpZip').value.trim();if(zip)propFields.Zip=parseInt(zip)||0;
+        var county=document.getElementById('inpCounty').value;if(county)propFields.County=county;
+        var parcel=document.getElementById('inpParcel').value.trim();if(parcel)propFields.Parcel=parcel;
+        var pn=document.getElementById('inpPropName').value.trim();if(pn)propFields.Property_Name=pn;
+        var pid=document.getElementById('inpPropId').value.trim();
+        if(!pid){pid=await getNextPropertyId();}
+        propFields.Property_Id=pid;
+        var ten=document.getElementById('inpTenancy').value;if(ten)propFields.Tenancy=ten;
+        var iu=document.getElementById('inpImageURL').value.trim();
+        if(iu){propFields.ImageURLs=iu;propFields.Pop_up_IMG=iu;}
+        var pnotes=document.getElementById('inpPropNotes').value.trim();if(pnotes)propFields.Property_Notes=pnotes;
+
+        if(ownerId)propFields.Name=["L",ownerId];
+        if(ownerName)propFields.PrimaryOwner=ownerName;
+
+        await grist.docApi.applyUserActions([["AddRecord","Properties_",null,propFields]]);
+        showToast('Property saved!','success');
+        clearForm();closeSidebar();
+        setTimeout(function(){updateOwnersTable();},500);
+    }catch(e){console.error("Save error:",e);showToast('Error: '+(e.message||'Unknown error'),'error');}
+    finally{spinner.style.display='none';saveText.innerHTML='&#128190; Save';saveBtn.disabled=false;}
+}
+
+function hasCol(col,obj){return obj&&typeof obj==='object'&&col in obj;}
+function defaultMapping(record,mappings){if(!mappings){var m={};m[COL.Longitude]=COL.Longitude;m[COL.Name]=COL.Name;m[COL.Latitude]=COL.Latitude;m[COL.Property_Id]=COL.Property_Id;m[COL.ImageURL]=COL.ImageURL;m[COL.CoStar_URL]=COL.CoStar_URL;m[COL.County_Hyper]=COL.County_Hyper;m[COL.GIS]=COL.GIS;m[COL.PrimaryOwner]=COL.PrimaryOwner;return m;}return mappings;}
+
+grist.on('message',function(e){if(e.tableId)selectedTableId=e.tableId;});
+
+grist.onRecord(function(record,mappings){
+    lastRecord=grist.mapColumnNames(record)||record;
+    if(mode==='single'){selectedRowId=lastRecord.id;buildMarkers([lastRecord]);}
+    else{var marker=popups[record.id];if(!marker||!markersLayer)return;try{if(markersLayer.hasLayer(marker)){markersLayer.zoomToShowLayer(marker,function(){if(!marker.getPopup())marker.bindPopup(createPopupContent(marker.record),{maxWidth:260,minWidth:240,className:'custom-popup'});marker.openPopup();});}}catch(e){}}
+});
+
+grist.onRecords(function(data,mappings){
+    lastRecords=grist.mapColumnNames(data)||data;
+    if(mode!=='single'){buildMarkers(lastRecords);updateFilterCounts();if(lastRecord&&lastRecord.id!==selectedRowId)selectedRowId=lastRecord.id;}
+});
+
+grist.onNewRecord(function(){});
+grist.onOptions(function(options,interaction){mode=(options&&options.mode)||mode;});
+
+grist.on('selection',function(records){
+    if(records.length===1&&amap){var marker=popups[records[0].id];if(marker&&markersLayer&&markersLayer.hasLayer(marker)){try{markersLayer.zoomToShowLayer(marker,function(){if(!marker.getPopup())marker.bindPopup(createPopupContent(marker.record),{maxWidth:260,minWidth:240,className:'custom-popup'});marker.openPopup();});}catch(e){}}}
+});
+
+document.addEventListener("DOMContentLoaded",function(){
+    grist.ready({
+        columns:["Name",{name:"Longitude",type:"Numeric"},{name:"Latitude",type:"Numeric"},{name:"Property_Id",type:"Text"},{name:"Property_Address",type:"Text"},{name:"ImageURLs",type:"Text",optional:true},{name:"CoStar_URL",type:"Text",optional:true},{name:"County_Hyper",type:"Text",optional:true},{name:"GIS",type:"Text",optional:true},{name:"PrimaryOwner",type:"Text",optional:true},{name:"City",type:"Choice",optional:true},{name:"State",type:"Text",optional:true},{name:"Zip",type:"Int",optional:true},{name:"County",type:"Choice",optional:true},{name:"Property_Name",type:"Text",optional:true},{name:"Pop_up_IMG",type:"Text",optional:true}],
+        allowSelectBy:true,
+        requiredAccess:'full'
+    });
+    initializeMap();updateOwnersTable();initFilterBar();initBasemapControl();
+
+    populateSelect('inpCity',CITY_CHOICES,'City...');populateSelect('inpCounty',COUNTY_CHOICES,'County...');populateSelect('inpClassifyColor',CLASSIFY_COLOR_CHOICES,'Select...');
+
+    document.getElementById('btnAddMode').addEventListener('click',function(e){e.stopPropagation();toggleAddMode();});
+    document.getElementById('cancel-click-mode').addEventListener('click',exitAddMode);
+    document.getElementById('btnCloseSidebar').addEventListener('click',closeSidebar);
+    document.getElementById('btnCancelAdd').addEventListener('click',closeSidebar);
+    document.getElementById('btnSaveAll').addEventListener('click',saveAll);
+    document.getElementById('sidebarOverlay').addEventListener('click',closeSidebar);
+
+    var tabs=document.querySelectorAll('.form-tab');for(var t=0;t<tabs.length;t++){tabs[t].addEventListener('click',function(){for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');this.classList.add('active');var contents=document.querySelectorAll('.form-tab-content');for(var j=0;j<contents.length;j++)contents[j].classList.remove('active');var target=document.getElementById(this.dataset.tab);if(target)target.classList.add('active');});}
+
+    document.getElementById('btnExistingOwner').addEventListener('click',function(){this.classList.add('active');document.getElementById('btnNewOwner').classList.remove('active');document.getElementById('panelExistingOwner').style.display='block';document.getElementById('panelNewOwner').style.display='none';});
+    document.getElementById('btnNewOwner').addEventListener('click',function(){this.classList.add('active');document.getElementById('btnExistingOwner').classList.remove('active');document.getElementById('panelExistingOwner').style.display='none';document.getElementById('panelNewOwner').style.display='block';});
+
+    var os=document.getElementById('inpOwnerSearch');os.addEventListener('input',function(){filterOwners(this.value.trim());});os.addEventListener('focus',function(){if(this.value.trim().length>=1)filterOwners(this.value.trim());});
+    document.getElementById('ownerResults').addEventListener('click',function(e){var item=e.target.closest('.owner-result-item');if(item&&item.dataset.id)selectOwner(parseInt(item.dataset.id),item.dataset.name);});
+    document.addEventListener('click',function(e){if(!document.getElementById('panelExistingOwner').contains(e.target))document.getElementById('ownerResults').classList.remove('active');});
+
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(document.getElementById('sidebar').classList.contains('open'))closeSidebar();else if(addModeActive)exitAddMode();}});
+});
+    </script>
+</body>
+</html>

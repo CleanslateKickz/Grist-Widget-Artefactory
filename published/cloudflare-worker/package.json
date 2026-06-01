@@ -1,0 +1,17 @@
+{
+  "name": "skip-tracer-pro",
+  "version": "1.0.0",
+  "description": "Unified skip tracing widget with URL launch and Cloudflare Worker API search modes",
+  "authors": [
+    {
+      "name": "CleanslateKickz",
+      "url": "https://github.com/CleanslateKickz"
+    }
+  ],
+  "grist": {
+    "widgetId": "@cleanslatekickz/widget-skip-tracer-pro",
+    "name": "Skip Tracer Pro",
+    "accessLevel": "full",
+    "description": "Skip tracing tool with 14+ search engines, phone validation, and Cloudflare Worker API integration for batch lookups."
+  }
+}

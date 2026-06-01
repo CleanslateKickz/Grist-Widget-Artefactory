@@ -1,0 +1,1267 @@
+
+
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skip Tracer Pro - Unified</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @import url('https://rsms.me/inter/inter.css');
+        html { font-family: 'Inter', sans-serif; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        .card-hover { transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        .logo-img { width: 40px; height: 40px; object-fit: contain; }
+
+        .input-focused:focus-within { ring: 2px; ring-color: #3b82f6; border-color: #3b82f6; }
+
+        .btn-active:active { transform: scale(0.98); }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tier-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; text-transform: uppercase; }
+        .tier-1 { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .tier-2 { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+        .tier-3 { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+        .result-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; transition: all 0.2s; }
+        .result-card:hover { border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59,130,246,0.1); }
+
+        .source-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+
+        .mode-toggle { position: relative; background: #f1f5f9; border-radius: 8px; padding: 3px; }
+        .mode-toggle button { position: relative; z-index: 1; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; transition: all 0.2s; }
+        .mode-toggle button.active { background: white; color: #3b82f6; shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Desktop sidebar collapse */
+        aside { transition: width 0.25s ease, min-width 0.25s ease; }
+        aside.sidebar-collapsed { width: 0 !important; min-width: 0 !important; overflow: hidden !important; border-right: none !important; }
+    </style>
+    </head>
+    <body class="h-full flex overflow-hidden text-slate-800 antialiased">
+
+        <!-- Mobile Overlay -->
+        <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden"></div>
+
+        <!-- Sidebar -->
+        <aside id="inputPanel" class="bg-white border-r border-slate-200 w-full md:w-[340px] flex flex-col fixed md:relative z-30 h-full shadow-xl md:shadow-none transition-transform duration-300">
+
+            <!-- Header -->
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-blue-600 text-white rounded-lg">
+                        <i class="ph ph-radar text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base text-slate-900">Skip Tracer</h1>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Unified Edition</span>
+                    </div>
+                </div>
+                <button id="desktopCollapseBtn" class="hidden md:flex p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg" title="Collapse sidebar">
+                    <i class="ph ph-caret-left text-base"></i>
+                </button>
+                <button id="closePanelBtn" class="md:hidden p-2 text-slate-400 hover:bg-slate-100 rounded-lg">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="px-4 py-3 border-b border-slate-100">
+                <div class="mode-toggle flex">
+                    <button id="modeUrl" class="flex-1 active">
+                        <i class="ph ph-link mr-1"></i>URL Launch
+                    </button>
+                    <button id="modeApi" class="flex-1 text-slate-500">
+                        <i class="ph ph-cloud-arrow-down mr-1"></i>API Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name</label>
+                        <input type="text" id="name" placeholder="First & Last Name" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Address</label>
+                        <input type="text" id="address" placeholder="City, State ZIP" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone</label>
+                        <input type="tel" id="phone" placeholder="(555) 000-0000" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+                        <input type="email" id="email" placeholder="email@example.com" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white transition-all">
+                    </div>
+                </div>
+
+                <!-- API Config (hidden in URL mode) -->
+                <div id="apiConfig" class="hidden p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <label class="block text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">
+                        <i class="ph ph-gear mr-1"></i>Worker URL
+                    </label>
+                    <input type="text" id="workerUrl" placeholder="https://osint-inline-search.sjgfroerer.workers.dev/" class="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg text-xs focus:outline-none">
+                    <div id="apiStatus" class="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
+                        <i class="ph ph-circle text-amber-500"></i>
+                        <span>Configure worker URL</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-3 border-t border-slate-100 space-y-2">
+                    <button id="launchAllBtn" class="w-full btn-active flex justify-center items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-4 rounded-lg text-sm font-bold transition-all">
+                        <i class="ph ph-rocket-launch text-yellow-400"></i>
+                        <span id="launchAllText">Launch All Searches</span>
+                    </button>
+                    <button id="clearBtn" class="w-full py-2 text-[11px] font-medium text-slate-400 hover:text-red-500 transition-colors">
+                        <i class="ph ph-trash mr-1"></i>Clear Form
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 bg-slate-50 border-t border-slate-200 text-center">
+                <p class="text-[9px] text-slate-400">Grist Widget v6.0 • 14 Engines</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full bg-slate-50/50 relative overflow-hidden">
+
+            <!-- Mobile Toggle -->
+            <div class="md:hidden absolute top-3 left-3 z-10">
+                <button id="openPanelBtn" class="bg-white p-2 rounded-lg shadow text-slate-700 border border-slate-200 btn-active">
+                    <i class="ph ph-list text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Desktop Expand (shown when sidebar is collapsed) -->
+            <div id="desktopExpandArea" class="hidden absolute top-3 left-3 z-10">
+                <button id="desktopExpandBtn" class="bg-white p-2 rounded-lg shadow text-slate-700 border border-slate-200 btn-active" title="Expand sidebar">
+                    <i class="ph ph-caret-right text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Header Bar -->
+            <div class="bg-white border-b border-slate-200 px-4 py-3 shrink-0">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span id="currentModeLabel" class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <i class="ph ph-magnifying-glass mr-1"></i>Ready
+                        </span>
+                    </div>
+                    <span id="countIndicator" class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
+                        0 Tools
+                    </span>
+                </div>
+                <!-- Search Mode Toggle (URL Mode only) -->
+                <div id="searchModeToggle" class="mt-3 flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
+                    <button id="modePhone" class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">
+                        <i class="ph ph-phone mr-1"></i>Phone
+                    </button>
+                    <button id="modeNameAddr" class="px-3 py-1.5 rounded-md text-xs font-bold bg-white text-slate-800 shadow-sm transition-all">
+                        <i class="ph ph-user mr-1"></i>Name + Address
+                    </button>
+                    <button id="modeAddress" class="px-3 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-slate-700 transition-all">
+                        <i class="ph ph-house-line mr-1"></i>Address
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            <div class="flex-1 overflow-y-auto p-4">
+
+                <!-- URL Mode Grid -->
+                <div id="urlModeView">
+                    <div id="toolsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="flex flex-col items-center justify-center py-16">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph ph-magnifying-glass text-2xl text-slate-300"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-500">Enter data to activate search tools</p>
+                        <p id="emptyStateHint" class="text-xs text-slate-400 mt-1">Select a search mode above</p>
+                    </div>
+                </div>
+
+                <!-- API Mode Results -->
+                <div id="apiModeView" class="hidden">
+                    <div id="apiLoading" class="hidden flex items-center justify-center py-12">
+                        <div class="text-center">
+                            <div class="spinner mx-auto mb-3"></div>
+                            <p class="text-sm text-slate-500">Searching engines...</p>
+                            <p id="apiProgress" class="text-xs text-slate-400 mt-1">0/0</p>
+                        </div>
+                    </div>
+
+                    <!-- Aggregated phones with Verified badges -->
+                    <div id="aggregatedSection" class="hidden mb-5"></div>
+
+                    <!-- FREE Services results -->
+                    <div id="freeServicesSection" class="hidden mb-5"></div>
+
+                    <div id="apiResults" class="space-y-4"></div>
+
+                    <div id="apiEmpty" class="flex flex-col items-center justify-center py-16">
+                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph ph-cloud-arrow-down text-2xl text-blue-300"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-500">API mode - results will appear here</p>
+                        <p class="text-xs text-slate-400 mt-1">Configure worker URL above</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <script>
+            // =====================================================
+            // CONFIGURATION
+            // =====================================================
+
+            const CONFIG = {
+                mode: 'url',
+                defaultWorkerUrl: 'https://osint-inline-search.sjgfroerer.workers.dev',
+            };
+
+            // =====================================================
+            // ENGINE DEFINITIONS - Priority ordered by captcha resistance
+            // =====================================================
+
+            // State abbreviation to full name for ZabaSearch URLs
+            const STATE_NAMES = {
+                AL:'alabama',AK:'alaska',AZ:'arizona',AR:'arkansas',CA:'california',
+                CO:'colorado',CT:'connecticut',DE:'delaware',FL:'florida',GA:'georgia',
+                HI:'hawaii',ID:'idaho',IL:'illinois',IN:'indiana',IA:'iowa',
+                KS:'kansas',KY:'kentucky',LA:'louisiana',ME:'maine',MD:'maryland',
+                MA:'massachusetts',MI:'michigan',MN:'minnesota',MS:'mississippi',MO:'missouri',
+                MT:'montana',NE:'nebraska',NV:'nevada',NH:'new-hampshire',NJ:'new-jersey',
+                NM:'new-mexico',NY:'new-york',NC:'north-carolina',ND:'north-dakota',OH:'ohio',
+                OK:'oklahoma',OR:'oregon',PA:'pennsylvania',RI:'rhode-island',SC:'south-carolina',
+                SD:'south-dakota',TN:'tennessee',TX:'texas',UT:'utah',VT:'vermont',
+                VA:'virginia',WA:'washington',WV:'west-virginia',WI:'wisconsin',WY:'wyoming',
+                DC:'district-of-columbia',
+            };
+
+            const ENGINES = {
+                // TIER 1 — people search, low captcha risk
+                zabasearch:         { id: 'zabasearch',         name: 'ZabaSearch',         tier: 1, type: 'both',   icon: 'ph-magnifying-glass', desc: 'People & Phone',       logo: 'https://www3.technologyevaluation.com/getattachment/e96d3cb8-779e-4798-965d-30963a64fa24/zabasearch-logo.png?lang=en-US&width=220&height=260&ext=.png&source=tw2' },
+                officialusa:        { id: 'officialusa',        name: 'OfficialUSA',        tier: 1, type: 'person', icon: 'ph-flag',             desc: 'People Directory',     logo: '' },
+                truepeoplesearch:   { id: 'truepeoplesearch',   name: 'TruePeople',         tier: 1, type: 'both',   icon: 'ph-users-three',      desc: 'People & Phone',       logo: 'https://play-lh.googleusercontent.com/aNUH0g2ASIp8tN9OnJpccMxQJDkZLPxrKWhw2OnGkDNA2WLePAOU9iWSXkSt5P3OY_0' },
+                fastpeoplesearch:   { id: 'fastpeoplesearch',   name: 'FastPeople',         tier: 1, type: 'both',   icon: 'ph-lightning',        desc: 'People & Phone',       logo: 'https://strapi.thunderbit.com/uploads/fastpeoplesearch_1a2a5b5828.jpg' },
+                // TIER 2 — medium captcha risk
+                cyberbackground:    { id: 'cyberbackground',    name: 'CyberBackground',    tier: 2, type: 'both',   icon: 'ph-shield-check',     desc: 'Background Check',     logo: 'https://images.squarespace-cdn.com/content/v1/6334b6e61bddcb0faba70ec7/6814598e-5027-43d5-be7f-ca9748f01814/Remove+information+from+Cyber+Background+Checks.png' },
+                usphonebook:        { id: 'usphonebook',        name: 'US PhoneBook',       tier: 2, type: 'both',   icon: 'ph-book-open',        desc: 'People & Phone',       logo: 'https://www.usphonebook.com/usphonebook/img/phone-search-lookup.png' },
+                peekyou:            { id: 'peekyou',            name: 'PeekYou',            tier: 2, type: 'person', icon: 'ph-eye',              desc: 'People Directory',     logo: '' },
+                thatsthem:          { id: 'thatsthem',          name: 'ThatsThem',          tier: 2, type: 'both',   icon: 'ph-identification-card', desc: 'People & Phone',   logo: '' },
+                // TIER 3 — free POST-based services
+                freephonevalidator: { id: 'freephonevalidator', name: 'Phone Validator',    tier: 3, type: 'phone',  icon: 'ph-check-circle',     desc: 'Validate & Carrier',   logo: '' },
+                freecarrierlookup:  { id: 'freecarrierlookup',  name: 'Carrier Lookup',     tier: 3, type: 'phone',  icon: 'ph-cell-signal-full', desc: 'Carrier & Line Type',   logo: '' },
+                freenamelookup:     { id: 'freenamelookup',     name: 'Name Lookup',        tier: 3, type: 'phone',  icon: 'ph-address-book',     desc: 'Name from Phone',       logo: '' },
+                freecallerlookup:   { id: 'freecallerlookup',   name: 'Caller Lookup',      tier: 3, type: 'phone',  icon: 'ph-phone-incoming',   desc: 'Caller ID Lookup',      logo: '' },
+                freeemailvalidator: { id: 'freeemailvalidator', name: 'Email Validator',    tier: 3, type: 'email',  icon: 'ph-envelope-simple',  desc: 'Validate Email',        logo: '' },
+                // URL-only engines
+                spydialer:          { id: 'spydialer',          name: 'SpyDialer',          tier: 1, type: 'phone',  icon: 'ph-phone-outgoing',   desc: 'Reverse Phone (URL)',  urlOnly: true, logo: '' },
+            };
+
+            // =====================================================
+            // PHONE RECORD CONFIG (mirrors Phone Manager widget)
+            // =====================================================
+
+            const PHONE_COLS = {
+                active: ['Phone', 'Phone_2', 'Phone_3', 'Phone_4'],
+                noteMap: { Phone: 'Phone_1_Notes', Phone_2: 'Phone_2_Notes', Phone_3: 'Phone_3_Notes', Phone_4: 'Phone_4_Notes' },
+                wrong: 'Wrong_Phone',
+                tableId: 'Owners',
+            };
+
+            // =====================================================
+            // STATE
+            // =====================================================
+
+            let currentRecord = null;
+            let rawRecord = null;      // full unfiltered Grist record for phone column access
+            let searchMode = 'nameaddr'; // 'phone', 'nameaddr', 'address'
+            let apiSearchInProgress = false;
+            let lastFreeServicesData = null;
+
+            // =====================================================
+            // DOM ELEMENTS
+            // =====================================================
+
+            const ui = {
+                inputPanel: document.getElementById('inputPanel'),
+                openPanelBtn: document.getElementById('openPanelBtn'),
+                closePanelBtn: document.getElementById('closePanelBtn'),
+                mobileOverlay: document.getElementById('mobileOverlay'),
+                inputs: {
+                    name: document.getElementById('name'),
+                    address: document.getElementById('address'),
+                    phone: document.getElementById('phone'),
+                    email: document.getElementById('email'),
+                },
+                workerUrl: document.getElementById('workerUrl'),
+                apiStatus: document.getElementById('apiStatus'),
+                launchAllBtn: document.getElementById('launchAllBtn'),
+                launchAllText: document.getElementById('launchAllText'),
+                clearBtn: document.getElementById('clearBtn'),
+                toolsGrid: document.getElementById('toolsGrid'),
+                emptyState: document.getElementById('emptyState'),
+                emptyStateHint: document.getElementById('emptyStateHint'),
+                currentModeLabel: document.getElementById('currentModeLabel'),
+                countIndicator: document.getElementById('countIndicator'),
+                searchModeToggle: document.getElementById('searchModeToggle'),
+                modePhone: document.getElementById('modePhone'),
+                modeNameAddr: document.getElementById('modeNameAddr'),
+                modeAddress: document.getElementById('modeAddress'),
+                modeUrl: document.getElementById('modeUrl'),
+                modeApi: document.getElementById('modeApi'),
+                apiConfig: document.getElementById('apiConfig'),
+                urlModeView: document.getElementById('urlModeView'),
+                apiModeView: document.getElementById('apiModeView'),
+                apiLoading: document.getElementById('apiLoading'),
+                apiProgress: document.getElementById('apiProgress'),
+                aggregatedSection: document.getElementById('aggregatedSection'),
+                freeServicesSection: document.getElementById('freeServicesSection'),
+                apiResults: document.getElementById('apiResults'),
+                apiEmpty: document.getElementById('apiEmpty'),
+            };
+
+            // =====================================================
+            // GRIST INTEGRATION
+            // =====================================================
+
+            grist.ready({
+                requiredAccess: 'full',
+                columns: ['Name', 'Owner_Address', 'Phone'],
+                selection: true
+            });
+
+            grist.onRecord((record, mappings) => {
+                rawRecord = record;   // store full record for phone column access
+                const mapped = grist.mapColumnNames(record, mappings);
+                currentRecord = mapped;
+                if (mapped) {
+                    ui.inputs.name.value = mapped.Name || '';
+                    ui.inputs.address.value = mapped.Owner_Address || '';
+                    ui.inputs.phone.value = mapped.Phone || '';
+                    updateGrids();
+                } else {
+                    resetForm();
+                }
+            });
+
+            // =====================================================
+            // HELPER FUNCTIONS
+            // =====================================================
+
+            const parseAddress = (str) => {
+                if (!str) return { street: '', city: '', state: '', zip: '' };
+                const parts = str.split(',');
+                const street = parts[0] ? parts[0].trim() : '';
+                let city = '', state = '', zip = '';
+                if (parts.length > 1) {
+                    const lastPart = parts[parts.length - 1].trim();
+                    const stateMatch = lastPart.match(/\b([A-Za-z]{2})\b/);
+                    if (stateMatch) {
+                        state = stateMatch[1].toUpperCase();
+                        const zipMatch = lastPart.match(/\b(\d{5}(?:-\d{4})?)\b/);
+                        if (zipMatch) zip = zipMatch[1];
+                        const cityPart = lastPart.split(stateMatch[0])[0].replace(/,/g, '').trim();
+                        city = cityPart || (parts.length > 2 ? parts[parts.length - 2].trim() : '');
+                    } else {
+                        city = parts[parts.length - 1].trim();
+                    }
+                }
+                return { street, city, state, zip };
+            };
+
+            const parseName = (str) => {
+                if (!str) return { first: '', last: '' };
+                const parts = str.trim().split(/\s+/);
+                if (parts.length < 2) return { first: str, last: '' };
+                return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+            };
+
+            const parsePhone = (str) => {
+                if (!str) return null;
+                const cleaned = str.replace(/\D/g, '');
+                if (cleaned.length !== 10) return null;
+                return { full: cleaned, ac: cleaned.substring(0, 3), ex: cleaned.substring(3, 6), ln: cleaned.substring(6, 10) };
+            };
+
+            // ── Phone-record matching (mirrors Phone Manager widget logic) ──
+
+            const sanitizePhone = (str) => (str && typeof str === 'string') ? str.replace(/\D/g, '') : '';
+
+            // Parses the Wrong_Phone cell: "formatted (reason); formatted; ..."
+            const parseWrongPhoneString = (str) => {
+                if (!str) return [];
+                return str.split(';').map(s => s.trim()).filter(Boolean).map(item => {
+                    const parenIdx = item.lastIndexOf(' (');
+                    if (parenIdx !== -1 && item.endsWith(')')) {
+                        return { number: item.substring(0, parenIdx).trim(), note: item.substring(parenIdx + 2, item.length - 1).trim() };
+                    }
+                    return { number: item, note: '' };
+                });
+            };
+
+            // Returns {status:'saved'|'wrong'|'new', field?, note?}
+            const checkPhoneStatus = (digits) => {
+                if (!rawRecord || !digits) return { status: 'new' };
+                const d = digits.replace(/\D/g, '').replace(/^1(\d{10})$/, '$1'); // strip leading 1
+                for (const col of PHONE_COLS.active) {
+                    const val = sanitizePhone(String(rawRecord[col] || '')).replace(/^1(\d{10})$/, '$1');
+                    if (val && val === d) return { status: 'saved', field: col };
+                }
+                const wrongs = parseWrongPhoneString(String(rawRecord[PHONE_COLS.wrong] || ''));
+                for (const w of wrongs) {
+                    const wDigits = sanitizePhone(w.number).replace(/^1(\d{10})$/, '$1');
+                    if (wDigits && wDigits === d) return { status: 'wrong', note: w.note };
+                }
+                return { status: 'new' };
+            };
+
+            // Saves a phone number into the first empty Phone slot in the current record
+            const addPhoneToRecord = async (phone) => {
+                if (!rawRecord) return alert('No record selected.');
+                const digits = sanitizePhone(phone);
+                const formatted = digits.length === 10 ? `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}` : phone;
+                const firstEmpty = PHONE_COLS.active.find(col => !rawRecord[col]);
+                if (!firstEmpty) return alert('All 4 phone slots are already filled on this record.');
+                try {
+                    await grist.docApi.applyUserActions([['UpdateRecord', PHONE_COLS.tableId, rawRecord.id, { [firstEmpty]: formatted }]]);
+                    rawRecord[firstEmpty] = formatted;
+                    alert(`Saved to ${firstEmpty}: ${formatted}`);
+                } catch (err) {
+                    console.error('Grist save error:', err);
+                    alert('Failed to save: ' + err.message);
+                }
+            };
+
+            // Global handler for inline onclick= in dynamically built HTML
+            window.addPhoneToRecord = addPhoneToRecord;
+
+            const resetForm = () => {
+                Object.values(ui.inputs).forEach(i => i.value = '');
+                updateGrids();
+            };
+
+            const togglePanel = (show) => {
+                if (show) {
+                    ui.inputPanel.classList.remove('-translate-x-full');
+                    ui.mobileOverlay.classList.remove('hidden');
+                } else {
+                    ui.inputPanel.classList.add('-translate-x-full');
+                    ui.mobileOverlay.classList.add('hidden');
+                }
+            };
+
+            const setMode = (mode) => {
+                CONFIG.mode = mode;
+                if (mode === 'url') {
+                    ui.modeUrl.classList.add('active');
+                    ui.modeUrl.classList.remove('text-slate-500');
+                    ui.modeApi.classList.remove('active');
+                    ui.modeApi.classList.add('text-slate-500');
+                    ui.apiConfig.classList.add('hidden');
+                    ui.urlModeView.classList.remove('hidden');
+                    ui.apiModeView.classList.add('hidden');
+                    ui.launchAllText.textContent = 'Launch All Searches';
+                    ui.searchModeToggle.classList.remove('hidden');
+                } else {
+                    ui.modeApi.classList.add('active');
+                    ui.modeApi.classList.remove('text-slate-500');
+                    ui.modeUrl.classList.remove('active');
+                    ui.modeUrl.classList.add('text-slate-500');
+                    // Only show apiConfig if URL is not pre-configured
+                    if (!CONFIG.defaultWorkerUrl) {
+                        ui.apiConfig.classList.remove('hidden');
+                    }
+                    ui.urlModeView.classList.add('hidden');
+                    ui.apiModeView.classList.remove('hidden');
+                    ui.launchAllText.textContent = 'Search All Engines';
+                    ui.searchModeToggle.classList.add('hidden');
+                }
+            };
+
+            // =====================================================
+            // URL MODE - GRID RENDERING
+            // =====================================================
+
+            const getPersonUrl = (site, f, l, c, s) => {
+                const enc = encodeURIComponent;
+                const stateFull = STATE_NAMES[s.toUpperCase()] || s.toLowerCase();
+                const fL = f.toLowerCase(), lL = l.toLowerCase();
+                const fCap = f.charAt(0).toUpperCase() + f.slice(1).toLowerCase();
+                const lCap = l.charAt(0).toUpperCase() + l.slice(1).toLowerCase();
+                switch (site.id) {
+                    case 'zabasearch': {
+                        let url = `https://www.zabasearch.com/people/${fL}-${lL}/`;
+                        if (stateFull) url += `${stateFull}/`;
+                        if (c) url += `${c.toLowerCase().replace(/\s+/g, '-')}/`;
+                        return url;
+                    }
+                    case 'officialusa':
+                        return `https://www.officialusa.com/names/${fCap}-${lCap}/`;
+                    case 'truepeoplesearch':
+                        return `https://www.truepeoplesearch.com/results?name=${enc(f + ' ' + l)}${s ? '&citystatezip=' + enc(c ? c + ' ' + s : s) : ''}`;
+                    case 'fastpeoplesearch':
+                        return `https://www.fastpeoplesearch.com/name/${enc(fL + '-' + lL)}${s ? '_' + enc(s.toUpperCase()) : ''}`;
+                    case 'cyberbackground': {
+                        let url = `https://www.cyberbackgroundchecks.com/people/${fL}-${lL}`;
+                        if (s) url += `/${s.toLowerCase()}`;
+                        if (c) url += `/${c.toLowerCase().replace(/\s+/g, '-')}`;
+                        return url;
+                    }
+                    case 'usphonebook':
+                        return `https://www.usphonebook.com/${enc(fCap)}-${enc(lCap)}/${enc(s.toUpperCase())}/${enc(c)}`;
+                    case 'peekyou':
+                        return `https://www.peekyou.com/${fL}_${lL}${s ? '/' + s.toLowerCase() : ''}`;
+                    case 'thatsthem':
+                        return `https://thatsthem.com/name/${enc(fL + '-' + lL)}`;
+                    default: return '#';
+                }
+            };
+
+            const getPhoneUrl = (site, phone, ac, ex, ln) => {
+                const p = phone || (ac + ex + ln);
+                const d = p.replace(/\D/g, '');
+                switch (site.id) {
+                    case 'spydialer':          return `https://www.spydialer.com/?phonenumber=${d}`;
+                    case 'usphonebook':        return `https://www.usphonebook.com/phone/${d}`;
+                    case 'zabasearch':         return `https://www.zabasearch.com/phone/${d}/`;
+                    case 'truepeoplesearch':   return `https://www.truepeoplesearch.com/results?phoneno=${d}`;
+                    case 'fastpeoplesearch':   return `https://www.fastpeoplesearch.com/phone/${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+                    case 'thatsthem':          return `https://thatsthem.com/phone/${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+                    case 'cyberbackground':    return `https://www.cyberbackgroundchecks.com/phone/${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
+                    default: return '#';
+                }
+            };
+
+            const renderGridItem = (site) => {
+                const btn = document.createElement('button');
+                btn.className = 'card-hover bg-white border border-slate-200 rounded-xl p-3 flex flex-col items-center text-center relative';
+
+                const tierClass = `tier-${site.tier}`;
+
+                let logoHtml = site.logo
+                ? `<img src="${site.logo}" alt="${site.name}" class="logo-img mb-2 opacity-90">`
+                : `<div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center mb-2"><i class="ph ${site.icon} text-xl text-slate-400"></i></div>`;
+
+                btn.innerHTML = `
+            ${logoHtml}
+            <h4 class="font-bold text-xs text-slate-800 leading-tight mb-1">${site.name}</h4>
+            <p class="text-[9px] text-slate-400 mb-1">${site.desc}</p>
+            <span class="tier-badge ${tierClass}">Tier ${site.tier}</span>
+        `;
+
+                btn.onclick = () => launchSite(site);
+                return btn;
+            };
+
+            const updateGrids = () => {
+                const nameData = parseName(ui.inputs.name.value);
+                const addressData = parseAddress(ui.inputs.address.value);
+                const phoneData = parsePhone(ui.inputs.phone.value);
+                const hasEmail = !!ui.inputs.email.value.trim();
+
+                ui.toolsGrid.innerHTML = '';
+
+                const hasPeople = !!nameData.first;
+                const hasPhone = !!phoneData;
+                const hasAddress = !!addressData.street || !!addressData.city;
+                const hasAny = hasPeople || hasPhone || hasEmail || hasAddress;
+
+                const getEnginesForMode = () => {
+                    if (searchMode === 'phone') {
+                        return Object.values(ENGINES).filter(s => s.type === 'phone' || s.type === 'both');
+                    } else if (searchMode === 'nameaddr') {
+                        const personEngines = Object.values(ENGINES).filter(s => s.type === 'person' || s.type === 'both');
+                        if (hasPhone) {
+                            const phoneEngines = Object.values(ENGINES).filter(s => s.type === 'phone' || s.type === 'both');
+                            return [...personEngines, ...phoneEngines];
+                        }
+                        return personEngines;
+                    } else if (searchMode === 'address') {
+                        return Object.values(ENGINES).filter(s => ['cyberbackground', 'usphonebook', 'thatsthem'].includes(s.id));
+                    }
+                    return [];
+                };
+
+                const engines = getEnginesForMode();
+                const hasData = (searchMode === 'phone' && hasPhone) ||
+                               (searchMode === 'nameaddr' && (hasPeople || hasPhone)) ||
+                               (searchMode === 'address' && hasAddress);
+
+                if (hasData) {
+                    ui.emptyState.classList.add('hidden');
+                    engines.forEach(site => ui.toolsGrid.appendChild(renderGridItem(site)));
+                    ui.countIndicator.textContent = `${engines.length} Tools`;
+                    ui.emptyStateHint.textContent = `Showing ${engines.length} search engines`;
+                } else {
+                    ui.emptyState.classList.remove('hidden');
+                    ui.countIndicator.textContent = '0 Tools';
+                    if (searchMode === 'phone') ui.emptyStateHint.textContent = 'Enter a phone number';
+                    else if (searchMode === 'nameaddr') ui.emptyStateHint.textContent = 'Enter a name or phone';
+                    else if (searchMode === 'address') ui.emptyStateHint.textContent = 'Enter an address';
+                }
+            };
+
+            const getCyberBgAddressUrl = (addressData) => {
+                const { street, city, state } = addressData;
+                if (!street) return null;
+                const slug = street.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                let url = `https://www.cyberbackgroundchecks.com/address/${slug}`;
+                if (city) url += `/${city.toLowerCase().replace(/\s+/g, '-')}`;
+                if (state) url += `/${state.toLowerCase()}`;
+                return url;
+            };
+
+            const getAddressOnlyUrl = (site, addressData) => {
+                const { street, city, state, zip } = addressData;
+                const enc = encodeURIComponent;
+                switch (site.id) {
+                    case 'cyberbackground':
+                        if (!street) return null;
+                        const slug = street.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        let url = `https://www.cyberbackgroundchecks.com/address/${slug}`;
+                        if (city) url += `/${city.toLowerCase().replace(/\s+/g, '-')}`;
+                        if (state) url += `/${state.toLowerCase()}`;
+                        return url;
+                    case 'usphonebook':
+                        if (!city || !state) return null;
+                        return `https://www.usphonebook.com/search/${enc(city)}/${enc(state.toUpperCase())}`;
+                    case 'thatsthem':
+                        if (!addressData.full) return null;
+                        const addrStr = `${street ? enc(street) + '/' : ''}${enc(city)}-${enc(state.toUpperCase())}`;
+                        return `https://thatsthem.com/address/${addrStr}`;
+                    default:
+                        return null;
+                }
+            };
+
+            const switchSearchMode = (mode) => {
+                searchMode = mode;
+                [ui.modePhone, ui.modeNameAddr, ui.modeAddress].forEach(btn => {
+                    btn.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+                    btn.classList.add('text-slate-500');
+                });
+
+                const modeLabels = {
+                    phone: '<i class="ph ph-phone mr-1"></i>Phone Search',
+                    nameaddr: '<i class="ph ph-user mr-1"></i>Name + Address',
+                    address: '<i class="ph ph-house-line mr-1"></i>Address Only'
+                };
+
+                if (mode === 'phone') {
+                    ui.modePhone.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+                    ui.modePhone.classList.remove('text-slate-500');
+                    ui.currentModeLabel.innerHTML = modeLabels.phone;
+                } else if (mode === 'nameaddr') {
+                    ui.modeNameAddr.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+                    ui.modeNameAddr.classList.remove('text-slate-500');
+                    ui.currentModeLabel.innerHTML = modeLabels.nameaddr;
+                } else if (mode === 'address') {
+                    ui.modeAddress.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+                    ui.modeAddress.classList.remove('text-slate-500');
+                    ui.currentModeLabel.innerHTML = modeLabels.address;
+                }
+                updateGrids();
+            };
+
+            const launchSite = (site) => {
+                const nameData = parseName(ui.inputs.name.value);
+                const addressData = parseAddress(ui.inputs.address.value);
+                const phoneData = parsePhone(ui.inputs.phone.value);
+                addressData.full = ui.inputs.address.value;
+
+                let url = '';
+
+                if (searchMode === 'phone' && phoneData) {
+                    url = getPhoneUrl(site, phoneData.full, phoneData.ac, phoneData.ex, phoneData.ln);
+                } else if (searchMode === 'nameaddr') {
+                    if ((site.type === 'person' || site.type === 'both') && nameData.first) {
+                        url = getPersonUrl(site, nameData.first, nameData.last, addressData.city, addressData.state);
+                        if (site.id === 'cyberbackground' && addressData.street) {
+                            const addrUrl = getCyberBgAddressUrl(addressData);
+                            if (addrUrl) window.open(addrUrl, '_blank', 'noopener,noreferrer');
+                        }
+                    } else if ((site.type === 'phone' || site.type === 'both') && phoneData) {
+                        url = getPhoneUrl(site, phoneData.full, phoneData.ac, phoneData.ex, phoneData.ln);
+                    }
+                } else if (searchMode === 'address') {
+                    if (addressData.street || addressData.city) {
+                        const addrUrl = getAddressOnlyUrl(site, addressData);
+                        if (addrUrl) url = addrUrl;
+                    }
+                }
+
+                if (url && url !== '#') {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                }
+            };
+
+            const launchCategory = (type) => {
+                const nameData = parseName(ui.inputs.name.value);
+                const phoneData = parsePhone(ui.inputs.phone.value);
+
+                Object.values(ENGINES).forEach(site => {
+                    if (site.type === type || site.type === 'both') {
+                        if (type === 'person' && nameData.first) launchSite(site);
+                        if (type === 'phone' && phoneData) launchSite(site);
+                    }
+                });
+            };
+
+            const launchFreeServices = () => {
+                const phoneData = parsePhone(ui.inputs.phone.value);
+                if (phoneData) {
+                    ['freephonevalidator', 'freecarrierlookup', 'freenamelookup', 'freecallerlookup'].forEach(id => {
+                        launchSite(ENGINES[id]);
+                    });
+                }
+            };
+
+            // =====================================================
+            // API MODE - SEARCH FUNCTIONS
+            // =====================================================
+
+            const checkApiConnection = async () => {
+                const url = ui.workerUrl.value.trim();
+                if (!url) {
+                    ui.apiStatus.innerHTML = '<i class="ph ph-circle text-amber-500"></i><span>Enter worker URL</span>';
+                    return false;
+                }
+
+                try {
+                    const res = await fetch(`${url}/health`);
+                    if (res.ok) {
+                        ui.apiStatus.innerHTML = '<i class="ph ph-check-circle text-green-500"></i><span>Connected</span>';
+                        return true;
+                    } else {
+                        ui.apiStatus.innerHTML = '<i class="ph ph-x-circle text-red-500"></i><span>Connection failed</span>';
+                        return false;
+                    }
+                } catch (e) {
+                    ui.apiStatus.innerHTML = '<i class="ph ph-x-circle text-red-500"></i><span>Connection error</span>';
+                    return false;
+                }
+            };
+
+            const runApiSearch = async () => {
+                const url = ui.workerUrl.value.trim();
+                if (!url) {
+                    alert('Please enter your Cloudflare Worker URL');
+                    return;
+                }
+
+                const nameData = parseName(ui.inputs.name.value);
+                const addressData = parseAddress(ui.inputs.address.value);
+                const phoneData = parsePhone(ui.inputs.phone.value);
+
+                if (!nameData.first && !phoneData) {
+                    alert('Enter a name or phone number');
+                    return;
+                }
+
+                // Derive engines from config, excluding urlOnly engines
+                const emailVal2 = ui.inputs.email.value.trim();
+                const enginesToSearch = [];
+                const seen = new Set();
+                Object.values(ENGINES).forEach(e => {
+                    if (e.urlOnly || seen.has(e.id)) return;
+                    if (nameData.first && (e.type === 'person' || e.type === 'both')) {
+                        enginesToSearch.push(e.id); seen.add(e.id);
+                    }
+                    if (phoneData && (e.type === 'phone' || e.type === 'both') && !seen.has(e.id)) {
+                        enginesToSearch.push(e.id); seen.add(e.id);
+                    }
+                    if (emailVal2 && e.type === 'email' && !seen.has(e.id)) {
+                        enginesToSearch.push(e.id); seen.add(e.id);
+                    }
+                });
+
+                if (enginesToSearch.length === 0) {
+                    alert('No valid search data');
+                    return;
+                }
+
+                // Show loading
+                apiSearchInProgress = true;
+                ui.apiEmpty.classList.add('hidden');
+                ui.apiResults.classList.add('hidden');
+                ui.apiLoading.classList.remove('hidden');
+
+                const emailVal = ui.inputs.email.value.trim();
+                const searchData = {
+                    firstName: nameData.first,
+                    lastName: nameData.last,
+                    city: addressData.city,
+                    state: addressData.state,
+                    phone: phoneData ? phoneData.full : null,
+                    email: emailVal || null,
+                };
+
+                try {
+                    console.log('Making API request to:', `${url}/batch`);
+                    console.log('Payload:', { engines: enginesToSearch, data: searchData });
+
+                    const res = await fetch(`${url}/batch`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ engines: enginesToSearch, data: searchData }),
+                    });
+
+                    console.log('Response status:', res.status);
+
+                    const data = await res.json();
+                    console.log('Response data:', data);
+
+                    displayApiResults(data);
+                } catch (e) {
+                    console.error('API request failed:', e);
+                    ui.apiResults.innerHTML = `<div class="text-center py-8 text-red-500"><i class="ph ph-warning text-2xl mb-2"></i><p>Error: ${e.message}</p></div>`;
+                    ui.apiResults.classList.remove('hidden');
+                } finally {
+                    ui.apiLoading.classList.add('hidden');
+                    apiSearchInProgress = false;
+                }
+            };
+
+            // Colored pill for line type
+            const lineTypePill = (lt) => {
+                if (!lt) return '';
+                const l = lt.toLowerCase();
+                const c = l.includes('mobile') ? 'bg-blue-50 text-blue-600 border-blue-100'
+                : l.includes('land')   ? 'bg-slate-100 text-slate-500 border-slate-200'
+                : l.includes('voip')   ? 'bg-violet-50 text-violet-600 border-violet-100'
+                :                        'bg-slate-50 text-slate-400 border-slate-200';
+                return `<span class="inline-block text-[9px] font-semibold px-1.5 py-px rounded border ${c} leading-none">${lt}</span>`;
+            };
+
+            // Build a phone row with Webex + PhoneLink call buttons (used in per-engine cards)
+            const phoneRowHtml = (phone, meta = {}) => {
+                const digits  = phone.replace(/\D/g, '');
+                const sipUri  = `sip:+1${digits}`;
+                const telUri  = `tel:+1${digits}`;
+                const carrierText = meta.carrier || '';
+                return `
+                <div class="flex items-center gap-1.5 py-1 border-b border-slate-100 last:border-0">
+                    <span class="font-mono text-xs font-bold text-slate-800 flex-shrink-0">${phone}</span>
+                    ${lineTypePill(meta.lineType)}
+                    ${carrierText ? `<span class="text-[9px] text-slate-400 truncate max-w-[110px]" title="${carrierText}">${carrierText}</span>` : ''}
+                    <div class="ml-auto flex items-center gap-1 flex-shrink-0">
+                        <a href="${sipUri}" title="Webex: ${phone}"
+                           class="w-7 h-7 rounded-md flex items-center justify-center bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all">
+                            <img src="https://cleanslatekickz.github.io/geojson/Images/Webex.png" class="w-4 h-4 object-contain" alt="Webex">
+            </a>
+                        <a href="${telUri}" title="Phone Link: ${phone}"
+                           class="w-7 h-7 rounded-md flex items-center justify-center bg-slate-50 hover:bg-green-50 border border-slate-200 hover:border-green-300 transition-all">
+                            <img src="https://cleanslatekickz.github.io/geojson/Images/Phone Link.png" class="w-4 h-4 object-contain" alt="Phone Link">
+            </a>
+            </div>
+            </div>`;
+            };
+
+            const displayApiResults = (data) => {
+                const results          = Array.isArray(data) ? data : (data.results || []);
+                // v6 returns aggregatedPhones; v5 returned allPhones — support both
+                const aggregatedPhones = Array.isArray(data) ? null : (data.aggregatedPhones || data.allPhones || null);
+                const freeServicesData = Array.isArray(data) ? [] : (data.freeServicesData || []);
+
+                // Clear everything
+                ui.aggregatedSection.innerHTML = '';
+                ui.aggregatedSection.classList.add('hidden');
+                ui.freeServicesSection.innerHTML = '';
+                ui.freeServicesSection.classList.add('hidden');
+                ui.apiResults.innerHTML = '';
+
+                const withData       = results.filter(r => r.results?.length > 0);
+                const captchaBlocked = results.filter(r => r.captchaTriggered && !r.results?.length);
+                const ipBlocked      = results.filter(r => r.blocked);
+                const noData         = results.filter(r => !r.error && !r.captchaTriggered && !r.blocked && !r.results?.length);
+                const failed         = results.filter(r => r.error && !r.captchaTriggered && !r.blocked);
+
+                // ── Summary bar ──
+                const summary = document.createElement('div');
+                summary.className = 'mb-3 px-3 py-1.5 bg-slate-100 rounded-lg';
+                summary.innerHTML = `
+                    <div class="flex flex-wrap gap-2 text-[10px]">
+                        <span class="text-green-600 font-medium"><i class="ph ph-check-circle mr-0.5"></i>${withData.length} with data</span>
+                        <span class="text-orange-500 font-medium"><i class="ph ph-shield-warning mr-0.5"></i>${captchaBlocked.length} captcha</span>
+                        <span class="text-purple-600 font-medium"><i class="ph ph-prohibit mr-0.5"></i>${ipBlocked.length} IP blocked</span>
+                        <span class="text-slate-400 font-medium"><i class="ph ph-minus-circle mr-0.5"></i>${noData.length} no data</span>
+                        <span class="text-red-500 font-medium"><i class="ph ph-x-circle mr-0.5"></i>${failed.length} failed</span>
+            </div>`;
+                ui.apiResults.appendChild(summary);
+
+                if (!results.length) {
+                    ui.apiResults.innerHTML += '<div class="text-center py-8 text-slate-500 text-sm">No results</div>';
+                    ui.apiResults.classList.remove('hidden');
+                    return;
+                }
+
+                // ── Aggregated phones panel (v6: aggregatedPhones with sourceCount) ──
+                let phonesToShow = aggregatedPhones;
+                if (!phonesToShow || !phonesToShow.length) {
+                    // Fallback: build from individual results
+                    const seen = new Map();
+                    for (const r of withData) {
+                        for (const res of r.results || []) {
+                            for (const ph of res.phones || []) {
+                                const d = ph.replace(/\D/g, '');
+                                if (d.length >= 10) {
+                                    if (!seen.has(d)) seen.set(d, { phone: ph, digits: d, sources: [], lineType: '', carrier: '' });
+                                    const e = seen.get(d);
+                                    if (!e.sources.includes(r.engineName)) e.sources.push(r.engineName);
+                                    if (!e.lineType) e.lineType = res.extra?.lineType || '';
+                                    if (!e.carrier)  e.carrier  = res.extra?.carrier  || '';
+                                }
+                            }
+                        }
+                    }
+                    phonesToShow = Array.from(seen.values()).map(e => ({ ...e, sourceCount: e.sources.length }))
+                        .sort((a, b) => b.sourceCount - a.sourceCount);
+                }
+
+                if (phonesToShow && phonesToShow.length > 0) {
+                    // ── Categorize phones against the current Grist record ──
+                    const savedPhones = [], newPhones = [], wrongPhones = [];
+                    phonesToShow.forEach(p => {
+                        const digits = p.digits || (p.phone || p.formatted || '').replace(/\D/g, '');
+                        p._digits  = digits;
+                        p._status  = checkPhoneStatus(digits);
+                        if      (p._status.status === 'saved') savedPhones.push(p);
+                        else if (p._status.status === 'wrong') wrongPhones.push(p);
+                        else                                    newPhones.push(p);
+                    });
+
+                    const verifiedBadge = (sc) => {
+                        if (sc >= 3) return `<span class="inline-block text-[9px] font-bold px-1.5 py-px rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 leading-none">✓ ${sc}×</span>`;
+                        if (sc === 2) return `<span class="inline-block text-[9px] font-bold px-1.5 py-px rounded-full bg-blue-100 text-blue-700 border border-blue-200 leading-none">2×</span>`;
+                        return `<span class="inline-block text-[9px] px-1 py-px rounded text-slate-300 leading-none">1×</span>`;
+                    };
+
+                    // Builds a single phone row in the aggregated panel
+                    const buildPhoneRow = (p, context) => {
+                        const sc      = p.sourceCount || p.sources?.length || 1;
+                        const digits  = p._digits;
+                        const sipUri  = `sip:+1${digits}`;
+                        const telUri  = `tel:+1${digits}`;
+                        const display = p.phone || p.formatted || '';
+                        const carrierText = p.carrier || '';
+                        const sources = p.sources?.length ? p.sources.join(' · ') : '';
+
+                        let numColor = 'text-slate-800', decoration = '', statusBadge = '', rowExtra = '';
+                        if (context === 'saved') {
+                            const field = (p._status.field || 'record').replace(/_/g, ' ');
+                            numColor    = 'text-emerald-700';
+                            statusBadge = `<span class="inline-block text-[9px] font-bold px-1.5 py-px rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 leading-none">✓ ${field}</span>`;
+                        } else if (context === 'wrong') {
+                            const tip = p._status.note ? ` title="${p._status.note}"` : '';
+                            numColor    = 'text-red-400';
+                            decoration  = 'line-through decoration-red-300';
+                            statusBadge = `<span${tip} class="inline-block text-[9px] font-bold px-1.5 py-px rounded-full bg-red-100 text-red-600 border border-red-200 leading-none cursor-help">✗ DNC${p._status.note ? ' ⓘ' : ''}</span>`;
+                        } else {
+                            rowExtra = `<button onclick="addPhoneToRecord('${display}')" title="Save to record"
+                                class="flex-shrink-0 h-7 px-2 rounded-md flex items-center gap-0.5 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-400 transition-all text-emerald-700 text-[9px] font-bold whitespace-nowrap">
+                                <i class="ph ph-plus text-[10px]"></i>Save</button>`;
+                        }
+
+                        const foundInNames = p.foundIn?.length ? p.foundIn.join(', ') : '';
+                        const sourceLine   = p.sources?.length ? p.sources.join(' · ') : '';
+
+                        return `
+                        <div class="py-1 border-b border-slate-100 last:border-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-mono text-xs font-bold ${numColor} ${decoration} flex-shrink-0">${display}</span>
+                                ${statusBadge}
+                                ${verifiedBadge(sc)}
+                                ${lineTypePill(p.lineType)}
+                                ${carrierText ? `<span class="text-[9px] text-slate-400 truncate max-w-[90px]" title="${carrierText}">${carrierText}</span>` : ''}
+                                <div class="ml-auto flex items-center gap-1 flex-shrink-0">
+                                    ${context !== 'wrong' ? `
+                                    <a href="${sipUri}" title="Webex: ${display}"
+                                       class="w-7 h-7 rounded-md flex items-center justify-center bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all">
+                                        <img src="https://cleanslatekickz.github.io/geojson/Images/Webex.png" class="w-4 h-4 object-contain" alt="Webex">
+            </a>
+                                    <a href="${telUri}" title="Phone Link: ${display}"
+                                       class="w-7 h-7 rounded-md flex items-center justify-center bg-white hover:bg-green-50 border border-slate-200 hover:border-green-300 transition-all">
+                                        <img src="https://cleanslatekickz.github.io/geojson/Images/Phone Link.png" class="w-4 h-4 object-contain" alt="Phone Link">
+            </a>` : ''}
+                                    ${rowExtra}
+            </div>
+            </div>
+                            ${(foundInNames || sourceLine) ? `
+                            <div class="flex items-center gap-2 mt-0.5 pl-0.5">
+                                ${foundInNames ? `<span class="text-[9px] text-slate-500 truncate" title="${foundInNames}"><i class="ph ph-user-circle"></i> ${foundInNames}</span>` : ''}
+                                ${sourceLine ? `<span class="text-[9px] text-slate-300 truncate flex-shrink-0" title="${sourceLine}">${sourceLine}</span>` : ''}
+            </div>` : ''}
+            </div>`;
+                    };
+
+                    // Section divider with colored accent bar
+                    const sectionHtml = (label, accentBg, badgeCls, phones, context) => {
+                        if (!phones.length) return '';
+                        return `
+                        <div>
+                            <div class="flex items-center gap-1.5 mt-2 mb-0.5">
+                                <div class="w-1 h-3 rounded-full ${accentBg} flex-shrink-0"></div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">${label}</span>
+                                <span class="text-[9px] font-bold px-1.5 py-px rounded-full ${badgeCls}">${phones.length}</span>
+                                <div class="flex-1 h-px bg-slate-100"></div>
+            </div>
+                            ${phones.map(p => buildPhoneRow(p, context)).join('')}
+            </div>`;
+                    };
+
+                    ui.aggregatedSection.innerHTML = `
+                        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                            <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                                <i class="ph ph-phone-list text-blue-500 text-sm"></i>
+                                <h3 class="font-bold text-xs text-slate-800">All Phone Numbers</h3>
+                                <div class="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
+                                    <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-px rounded-full">${phonesToShow.length} unique</span>
+                                    ${newPhones.length   ? `<span class="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-px rounded-full">${newPhones.length} new</span>` : ''}
+                                    ${savedPhones.length ? `<span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-px rounded-full">${savedPhones.length} on file</span>` : ''}
+                                    ${wrongPhones.length ? `<span class="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-px rounded-full">${wrongPhones.length} DNC</span>` : ''}
+            </div>
+            </div>
+                            <div class="px-3 pb-2 max-h-[280px] overflow-y-auto">
+                                ${sectionHtml('New Numbers',    'bg-slate-400',   'bg-slate-100 text-slate-600',   newPhones,   'new')}
+                                ${sectionHtml('Already on File','bg-emerald-500', 'bg-emerald-100 text-emerald-700', savedPhones, 'saved')}
+                                ${sectionHtml('Do Not Call',    'bg-red-500',     'bg-red-100 text-red-600',       wrongPhones, 'wrong')}
+            </div>
+            </div>`;
+                    ui.aggregatedSection.classList.remove('hidden');
+                }
+
+                // ── Free services results ──
+                if (freeServicesData.length > 0) {
+                    lastFreeServicesData = freeServicesData;
+                    displayFreeServicesResults(freeServicesData);
+                }
+
+                // ── Per-engine results ──
+                withData.forEach(engine => {
+                    const engineMeta = ENGINES[engine.engine];
+                    const tierClass  = engineMeta ? `tier-${engineMeta.tier}` : 'tier-3';
+
+                    const section = document.createElement('div');
+                    section.className = 'mb-3';
+
+                    let cardsHtml = '';
+                    engine.results.forEach(result => {
+                        const phones    = result.phones?.filter(Boolean)    || [];
+                        const addresses = result.addresses?.filter(Boolean) || [];
+                        const relatives = result.relatives?.filter(Boolean) || [];
+                        const extra     = result.extra || {};
+                        // v6 returns matchScore per result; v5 had top-level matchConfidence
+                        const score = result.matchScore ?? engine.matchConfidence ?? 0;
+                        const confColor = score >= 0.7 ? 'bg-green-100 text-green-700' : score >= 0.4 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-500';
+                        const confBadge = score > 0 ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${confColor}">${Math.round(score * 100)}% match</span>` : '';
+
+                        const metaRows = [
+                            extra.active          && `<span class="text-[10px] ${extra.active === 'YES' || extra.active === true ? 'text-green-600' : 'text-slate-400'}"><i class="ph ph-pulse mr-0.5"></i>Active: ${extra.active}</span>`,
+                            extra.confidenceLevel && `<span class="text-[10px] text-slate-500"><i class="ph ph-chart-bar mr-0.5"></i>Confidence: ${extra.confidenceLevel}</span>`,
+                            (extra.lineType || extra.lineTypes?.length) && `<span class="text-[10px] text-slate-500"><i class="ph ph-device-mobile mr-0.5"></i>${extra.lineType || extra.lineTypes?.join(', ')}</span>`,
+                            (extra.carrier  || extra.carriers?.length)  && `<span class="text-[10px] text-slate-500"><i class="ph ph-buildings mr-0.5"></i>${extra.carrier  || extra.carriers?.join(', ')}</span>`,
+                        ].filter(Boolean).join(' · ');
+
+                        cardsHtml += `
+                        <div class="result-card">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                                    ${result.name ? `<span class="font-bold text-xs text-slate-800">${result.name}</span>` : ''}
+                                    ${result.age  ? `<span class="text-[10px] text-slate-400">Age ${result.age}</span>` : ''}
+                                    ${confBadge}
+            </div>
+                                <span class="tier-badge ${tierClass} flex-shrink-0 ml-2">${engine.engineName}</span>
+            </div>
+                            ${metaRows ? `<div class="flex flex-wrap gap-1.5 mb-1">${metaRows}</div>` : ''}
+                            ${addresses.length ? `<p class="text-[10px] text-slate-500 mb-1 truncate" title="${addresses.join(' · ')}"><i class="ph ph-map-pin mr-0.5"></i>${addresses[0]}${addresses.length > 1 ? ` +${addresses.length-1}` : ''}</p>` : ''}
+                            ${phones.length ? phones.map(ph => phoneRowHtml(ph, { lineType: extra.lineType || extra.lineTypes?.[0], carrier: extra.carrier || extra.carriers?.[0] })).join('') : '<p class="text-[10px] text-slate-300 italic">No phone on this source</p>'}
+                            ${relatives.length ? `<p class="text-[10px] text-slate-400 mt-1 truncate" title="${relatives.join(' · ')}"><i class="ph ph-users-three mr-0.5"></i>${relatives.slice(0,4).join(' · ')}${relatives.length > 4 ? ` +${relatives.length-4}` : ''}</p>` : ''}
+            </div>`;
+                    });
+
+                    section.innerHTML = `
+                        <h3 class="font-bold text-[10px] text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                            <i class="ph ${engineMeta?.icon || 'ph-magnifying-glass'}"></i>
+                            ${engine.engineName}
+                            <span class="font-normal normal-case text-slate-400">${engine.totalFound} result${engine.totalCandidates ? ` · ${engine.totalCandidates} candidates` : ''}</span>
+            </h3>
+                        ${cardsHtml}`;
+                    ui.apiResults.appendChild(section);
+                });
+
+                // ── Status sections ──
+                if (captchaBlocked.length) {
+                    const el = document.createElement('div');
+                    el.className = 'mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg';
+                    el.innerHTML = `<p class="text-xs font-bold text-orange-700 mb-1"><i class="ph ph-shield-warning mr-1"></i>Captcha Blocked</p>
+                        <div class="flex flex-wrap gap-1">${captchaBlocked.map(r => `<span class="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded">${r.engineName}</span>`).join('')}</div>`;
+                    ui.apiResults.appendChild(el);
+                }
+                if (ipBlocked.length) {
+                    const el = document.createElement('div');
+                    el.className = 'mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg';
+                    el.innerHTML = `<p class="text-xs font-bold text-purple-700 mb-1"><i class="ph ph-prohibit mr-1"></i>IP Blocked (403/429)</p>
+                        <div class="flex flex-wrap gap-1">${ipBlocked.map(r => `<span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded">${r.engineName}</span>`).join('')}</div>
+                        <p class="text-[10px] text-purple-500 mt-1">Cloudflare Workers IPs flagged — residential proxy needed.</p>`;
+                    ui.apiResults.appendChild(el);
+                }
+                if (failed.length) {
+                    const el = document.createElement('div');
+                    el.className = 'mb-3 p-3 bg-red-50 border border-red-200 rounded-lg';
+                    el.innerHTML = `<p class="text-xs font-bold text-red-600 mb-1"><i class="ph ph-x-circle mr-1"></i>Failed</p>
+                        ${failed.map(r => `<p class="text-[10px] text-red-500"><span class="font-medium">${r.engineName}:</span> ${r.error}</p>`).join('')}`;
+                    ui.apiResults.appendChild(el);
+                }
+
+                ui.apiResults.classList.remove('hidden');
+            };
+
+            const displayFreeServicesResults = (freeServicesData) => {
+                if (!freeServicesData || !freeServicesData.length) return;
+                const rows = freeServicesData.map(svc => {
+                    const d = svc.data || {};
+                    const fields = [
+                        d.name        && `<span><i class="ph ph-user mr-1"></i>${d.name}</span>`,
+                        d.carrier     && `<span><i class="ph ph-buildings mr-1"></i>${d.carrier}</span>`,
+                        d.lineType    && `<span><i class="ph ph-device-mobile mr-1"></i>${d.lineType}</span>`,
+                        (d.active !== undefined) && `<span class="${d.active === true || d.active === 'YES' ? 'text-green-600' : 'text-slate-400'}"><i class="ph ph-pulse mr-1"></i>Active: ${d.active}</span>`,
+                        d.location    && `<span><i class="ph ph-map-pin mr-1"></i>${d.location}</span>`,
+                        d.email       && `<span><i class="ph ph-envelope mr-1"></i>${d.email}</span>`,
+                        d.valid       !== undefined && `<span class="${d.valid ? 'text-green-600' : 'text-red-500'}"><i class="ph ph-${d.valid ? 'check' : 'x'}-circle mr-1"></i>${d.valid ? 'Valid' : 'Invalid'}</span>`,
+                        d.disposable  !== undefined && d.disposable && `<span class="text-orange-500"><i class="ph ph-warning mr-1"></i>Disposable</span>`,
+                    ].filter(Boolean).join('<span class="text-slate-300 mx-1">·</span>');
+
+                    return `
+                    <div class="flex items-start gap-2 py-2 border-b border-slate-100 last:border-0">
+                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
+                            <i class="ph ${ENGINES[svc.engine]?.icon || 'ph-star'} text-emerald-600 text-xs"></i>
+            </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] font-bold text-slate-600 mb-0.5">${svc.engineName}</p>
+                            <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-500">${fields || '<span class="text-slate-300 italic">No data returned</span>'}</div>
+            </div>
+            </div>`;
+                }).join('');
+
+                ui.freeServicesSection.innerHTML = `
+                    <div class="bg-white border-2 border-emerald-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="ph ph-star text-emerald-500 text-lg"></i>
+                            <h3 class="font-bold text-sm text-slate-800">FREE Services</h3>
+                            <span class="ml-auto text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">${freeServicesData.length} services</span>
+            </div>
+                        ${rows}
+            </div>`;
+                ui.freeServicesSection.classList.remove('hidden');
+            };
+
+            // =====================================================
+            // EVENT LISTENERS
+            // =====================================================
+
+            ui.launchAllBtn.addEventListener('click', () => {
+                if (CONFIG.mode === 'url') {
+                    const nameData = parseName(ui.inputs.name.value);
+                    const addressData = parseAddress(ui.inputs.address.value);
+                    const phoneData = parsePhone(ui.inputs.phone.value);
+                    addressData.full = ui.inputs.address.value;
+
+                    Object.values(ENGINES).forEach(site => {
+                        let url = '';
+                        if (searchMode === 'phone' && phoneData) {
+                            if (site.type === 'phone' || site.type === 'both') {
+                                url = getPhoneUrl(site, phoneData.full, phoneData.ac, phoneData.ex, phoneData.ln);
+                            }
+                        } else if (searchMode === 'nameaddr') {
+                            if ((site.type === 'person' || site.type === 'both') && nameData.first) {
+                                url = getPersonUrl(site, nameData.first, nameData.last, addressData.city, addressData.state);
+                                if (site.id === 'cyberbackground' && addressData.street) {
+                                    const addrUrl = getCyberBgAddressUrl(addressData);
+                                    if (addrUrl) window.open(addrUrl, '_blank', 'noopener,noreferrer');
+                                }
+                            } else if ((site.type === 'phone' || site.type === 'both') && phoneData) {
+                                url = getPhoneUrl(site, phoneData.full, phoneData.ac, phoneData.ex, phoneData.ln);
+                            }
+                        } else if (searchMode === 'address') {
+                            if (addressData.street || addressData.city) {
+                                url = getAddressOnlyUrl(site, addressData) || '';
+                            }
+                        }
+                        if (url && url !== '#') {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                        }
+                    });
+                } else {
+                    runApiSearch();
+                }
+            });
+            ui.clearBtn.addEventListener('click', resetForm);
+
+            ui.modePhone.addEventListener('click', () => switchSearchMode('phone'));
+            ui.modeNameAddr.addEventListener('click', () => switchSearchMode('nameaddr'));
+            ui.modeAddress.addEventListener('click', () => switchSearchMode('address'));
+
+            ui.modeUrl.addEventListener('click', () => setMode('url'));
+            ui.modeApi.addEventListener('click', () => setMode('api'));
+
+            ui.openPanelBtn.addEventListener('click', () => togglePanel(true));
+            ui.closePanelBtn.addEventListener('click', () => togglePanel(false));
+            ui.mobileOverlay.addEventListener('click', () => togglePanel(false));
+
+            // Desktop sidebar collapse/expand
+            const desktopCollapseBtn = document.getElementById('desktopCollapseBtn');
+            const desktopExpandArea  = document.getElementById('desktopExpandArea');
+            const desktopExpandBtn   = document.getElementById('desktopExpandBtn');
+            desktopCollapseBtn.addEventListener('click', () => {
+                ui.inputPanel.classList.add('sidebar-collapsed');
+                desktopExpandArea.classList.remove('hidden');
+            });
+            desktopExpandBtn.addEventListener('click', () => {
+                ui.inputPanel.classList.remove('sidebar-collapsed');
+                desktopExpandArea.classList.add('hidden');
+            });
+
+            Object.values(ui.inputs).forEach(input => {
+                input.addEventListener('input', updateGrids);
+            });
+
+            // Initialize
+            if (window.innerWidth < 768) {
+                ui.inputPanel.classList.add('-translate-x-full');
+            }
+            setMode('url');
+            switchSearchMode('nameaddr');
+
+            // Load saved worker URL and hide config if pre-set
+            if (CONFIG.defaultWorkerUrl) {
+                ui.workerUrl.value = CONFIG.defaultWorkerUrl;
+                setTimeout(async () => {
+                    const connected = await checkApiConnection();
+                    if (connected) {
+                        ui.apiConfig.classList.add('hidden');
+                    }
+                }, 500);
+            }
+        </script>
+    </body>
+</html>

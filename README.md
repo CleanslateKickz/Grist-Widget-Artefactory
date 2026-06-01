@@ -1,4 +1,4 @@
-# Grist Widgets
+# Grist Widget Artefactory
 
 Collection of **custom widgets** for [Grist](https://www.getgrist.com/), the open-source collaborative database platform.
 
@@ -12,15 +12,42 @@ These widgets are stable and ready to use.
 
 ### TaskFlow
 
-Suite of 3 project management widgets, usable together or separately.
+Suite of project management widgets, usable together or separately.
 
 | Widget | Description | Direct link |
 |--------|-------------|-------------|
-| **Kanban** | Task board with drag & drop, filters, modals | [Use](https://nic01asfr.github.io/Widgets-Grist/taskflow/kanban/) |
-| **Gantt** | Interactive planning chart | [Use](https://nic01asfr.github.io/Widgets-Grist/taskflow/gantt/) |
-| **Calendar** | Calendar view (month/week/day) | [Use](https://nic01asfr.github.io/Widgets-Grist/taskflow/calendar/) |
+| **Kanban** | Task board with drag & drop, filters, modals | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/taskflow/kanban/) |
+| **Gantt** | Interactive planning chart | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/taskflow/gantt/) |
+| **Calendar** | Calendar view (month/week/day) | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/taskflow/calendar/) |
+| **Dashboard** | KPIs and task statistics | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/taskflow/dashboard/) |
 
-The 3 widgets automatically synchronize when they are in the same Grist document (shared selection).
+The TaskFlow widgets automatically synchronize when they are in the same Grist document (shared selection).
+
+### Artefactory
+
+| Widget | Description | Direct link |
+|--------|-------------|-------------|
+| **Artefactory** | No-code IDE in Grist: create/edit widgets (React, HTML, SVG, Mermaid, Markdown) | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/artefactory/) |
+| **Atlas** | Territorial 3D mockup visualization | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/atlas/) |
+
+### Data Tools
+
+| Widget | Description | Direct link |
+|--------|-------------|-------------|
+| **Multi Table Editor** | Multi-table data manipulation with CRUD and reference fields | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/multi-table-editor/) |
+| **QGIS → Grist Importer** | Import QGIS layers directly into Grist | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/qgis2grist/) |
+
+### Maps
+
+| Widget | Description | Direct link |
+|--------|-------------|-------------|
+| **CRM Map** | Interactive property map with clustering, search, and classification filters | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/crm-map/) |
+
+### Skip Tracing
+
+| Widget | Description | Direct link |
+|--------|-------------|-------------|
+| **Skip Tracer Pro** | 14+ search engines with URL launch and Cloudflare Worker API modes | [Use](https://CleanslateKickz.github.io/Grist-Widget-Artefactory/cloudflare-worker/) |
 
 ---
 
@@ -30,14 +57,14 @@ The 3 widgets automatically synchronize when they are in the same Grist document
 
 In Grist: **Add Widget** → **Custom** → **Enter Custom URL**
 
-Paste the URL of the desired widget (see table above).
+Paste the URL of the desired widget (see tables above).
 
 ### Option 2: Widget catalog (Grist self-hosted)
 
 Configure your Grist instance to use this repo as a widget source:
 
 ```bash
-GRIST_WIDGET_LIST_URL=https://nic01asfr.github.io/Widgets-Grist/manifest.json
+GRIST_WIDGET_LIST_URL=https://CleanslateKickz.github.io/Grist-Widget-Artefactory/manifest.json
 ```
 
 The widgets will automatically appear in the "Custom Widget" selector.
@@ -61,14 +88,6 @@ scripts/           ← Build and publishing tools
 ```
 
 To contribute or understand the architecture: see [CLAUDE.md](CLAUDE.md)
-
----
-
-## Contributing
-
-- **Report a bug**: [Open an issue](../../issues/new)
-- **Propose an improvement**: [Discussions](../../discussions)
-- **Vote for a project**: Add a reaction on the project's issue
 
 ---
 

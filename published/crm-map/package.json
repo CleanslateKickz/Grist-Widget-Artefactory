@@ -1,0 +1,17 @@
+{
+  "name": "crm-map",
+  "version": "1.0.0",
+  "description": "Leaflet-based property map with clustering, search, classification filters, and add-property sidebar",
+  "authors": [
+    {
+      "name": "CleanslateKickz",
+      "url": "https://github.com/CleanslateKickz"
+    }
+  ],
+  "grist": {
+    "widgetId": "@cleanslatekickz/widget-crm-map",
+    "name": "CRM Map",
+    "accessLevel": "full",
+    "description": "Interactive property map with marker clustering, geocoding search, classification filters, and point-and-click property creation."
+  }
+}

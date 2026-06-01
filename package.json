@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nicO1asFr/Widgets-Grist.git"
+    "url": "git+https://github.com/CleanslateKickz/Grist-Widget-Artefactory.git"
   },
   "keywords": [
     "grist",
@@ -23,6 +23,6 @@
     "calendar",
     "no-code"
   ],
-  "author": "nicO1asFr",
+  "author": "CleanslateKickz",
   "license": "MIT"
 }

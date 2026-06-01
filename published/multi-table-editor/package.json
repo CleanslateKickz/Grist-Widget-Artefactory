@@ -1,0 +1,17 @@
+{
+  "name": "multi-table-editor",
+  "version": "1.0.0",
+  "description": "Advanced Grist widget for multi-table data manipulation with reference field support",
+  "authors": [
+    {
+      "name": "CleanslateKickz",
+      "url": "https://github.com/CleanslateKickz"
+    }
+  ],
+  "grist": {
+    "widgetId": "@cleanslatekickz/widget-multi-table-editor",
+    "name": "Multi Table Editor",
+    "accessLevel": "full",
+    "description": "Single interface to view, edit and manage data from all tables in your Grist document with tab navigation, CRUD operations and reference field management."
+  }
+}
